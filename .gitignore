@@ -3,6 +3,10 @@ bin/
 obj/
 out/
 publish/
+# Some .NET tooling (e.g. `dotnet ef`) drops files with literal backslashes
+# in their names (Windows path separators in filenames) — match those too.
+**/*bin\\*
+**/*obj\\*
 *.user
 *.suo
 *.cache
