@@ -62,6 +62,13 @@ builder.Services.AddScoped<IClientContext, ClientContext>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
 
+// Weather forecast (Open-Meteo) — typed HttpClient with a 6h in-memory cache
+// baked into the service itself.
+builder.Services.AddHttpClient<IWeatherService, OpenMeteoWeatherService>(c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(5);
+});
+
 // Background jobs
 builder.Services.AddHostedService<InvitationPurgeHostedService>();
 

@@ -12,15 +12,18 @@ public class GetMyInvitationsQueryHandler : IRequestHandler<GetMyInvitationsQuer
 {
     private readonly IInvitationRepository _invitations;
     private readonly ICounterProposalRepository _counterProposals;
+    private readonly IWeatherService _weather;
     private readonly ICurrentUser _currentUser;
 
     public GetMyInvitationsQueryHandler(
         IInvitationRepository invitations,
         ICounterProposalRepository counterProposals,
+        IWeatherService weather,
         ICurrentUser currentUser)
     {
         _invitations = invitations;
         _counterProposals = counterProposals;
+        _weather = weather;
         _currentUser = currentUser;
     }
 
@@ -49,6 +52,11 @@ public class GetMyInvitationsQueryHandler : IRequestHandler<GetMyInvitationsQuer
                 }
             }
 
+            var forecast = await _weather.GetForecastAsync(i.Place.Lat, i.Place.Lng, i.MeetingAt, ct);
+            var weatherDto = forecast is null
+                ? null
+                : new WeatherDto(forecast.TemperatureMaxC, forecast.TemperatureMinC, forecast.PrecipitationMm, forecast.WeatherCode, forecast.Description);
+
             results.Add(new InvitationDetailDto(
                 Slug: i.Slug,
                 Vibe: i.Vibe.ToString(),
@@ -65,7 +73,8 @@ public class GetMyInvitationsQueryHandler : IRequestHandler<GetMyInvitationsQuer
                 // The initiator *is* the caller, so we don't need to look the user up.
                 // "You" keeps the DTO shape consistent with the public view.
                 InitiatorName: "You",
-                LatestCounter: latest));
+                LatestCounter: latest,
+                Weather: weatherDto));
         }
 
         return results;

@@ -82,10 +82,11 @@
 
 ## Phase 4 — Weather
 
-- [ ] Backend: `WeatherService` (Open-Meteo client)
-- [ ] Backend: caching per lat/lng/date, 6h TTL
-- [ ] Backend: include weather in the invitation detail response
-- [ ] Frontend: `WeatherCard` component (icon + temperature + short description)
+- [x] Backend: `IWeatherService` / `OpenMeteoWeatherService` (no API key needed)
+- [x] Backend: in-memory cache keyed by (lat, lng, date) with 6h TTL
+- [x] Backend: include weather in `GET /api/invitations/{slug}` and `GET /api/invitations/my`
+- [x] Frontend: `WeatherCard` component (icon + temperature + short description), surfaced on `/i/[slug]` and the dashboard cards
+- [ ] Surface weather in the Phase 5 24h reminder notification
 
 ## Phase 5 — Notifications
 

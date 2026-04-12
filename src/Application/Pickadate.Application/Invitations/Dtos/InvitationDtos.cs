@@ -14,6 +14,13 @@ public record CounterProposalDto(
     PlaceDto? NewPlace,
     DateTime CreatedAt);
 
+public record WeatherDto(
+    double? TemperatureMaxC,
+    double? TemperatureMinC,
+    double? PrecipitationMm,
+    int? WeatherCode,
+    string Description);
+
 public record InvitationDetailDto(
     string Slug,
     string Vibe,
@@ -28,6 +35,7 @@ public record InvitationDetailDto(
     DateTime CreatedAt,
     DateTime ExpiresAt,
     string InitiatorName,
-    CounterProposalDto? LatestCounter);
+    CounterProposalDto? LatestCounter,
+    WeatherDto? Weather);
 
 public record CreateInvitationResult(string Slug);

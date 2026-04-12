@@ -1,4 +1,5 @@
 using MediatR;
+using Pickadate.Application.Contracts;
 using Pickadate.Application.Invitations.Dtos;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Invitations;
@@ -13,17 +14,20 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
     private readonly IInvitationRepository _invitations;
     private readonly ICounterProposalRepository _counterProposals;
     private readonly IUserRepository _users;
+    private readonly IWeatherService _weather;
     private readonly IUnitOfWork _uow;
 
     public GetInvitationBySlugQueryHandler(
         IInvitationRepository invitations,
         ICounterProposalRepository counterProposals,
         IUserRepository users,
+        IWeatherService weather,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _counterProposals = counterProposals;
         _users = users;
+        _weather = weather;
         _uow = uow;
     }
 
@@ -60,6 +64,11 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
             }
         }
 
+        var weather = await _weather.GetForecastAsync(invitation.Place.Lat, invitation.Place.Lng, invitation.MeetingAt, ct);
+        var weatherDto = weather is null
+            ? null
+            : new WeatherDto(weather.TemperatureMaxC, weather.TemperatureMinC, weather.PrecipitationMm, weather.WeatherCode, weather.Description);
+
         return new InvitationDetailDto(
             Slug: invitation.Slug,
             Vibe: invitation.Vibe.ToString(),
@@ -79,6 +88,7 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
             CreatedAt: invitation.CreatedAt,
             ExpiresAt: invitation.ExpiresAt,
             InitiatorName: initiator?.Name ?? "Someone",
-            LatestCounter: latestCounterDto);
+            LatestCounter: latestCounterDto,
+            Weather: weatherDto);
     }
 }

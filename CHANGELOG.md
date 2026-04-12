@@ -2,6 +2,18 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-12 — Phase 4: weather forecast
+
+### Added
+- `IWeatherService` contract in Application with a `WeatherForecast` record
+- `OpenMeteoWeatherService` in Infrastructure — typed `HttpClient` against `api.open-meteo.com`, no API key, 5s timeout
+- In-memory cache keyed by `(lat rounded to 3 decimals, lng rounded to 3 decimals, date)` with a 6h TTL so co-located invitations share one upstream hit (spec §6)
+- `WmoCodes.Describe` maps WMO weather codes to plain English
+- `GetInvitationBySlugQuery` and `GetMyInvitationsQuery` both fetch the forecast for each invitation (graceful null if beyond the 7-day horizon or the upstream fails)
+- `WeatherDto` on `InvitationDetailDto`
+- `AddHttpClient<IWeatherService, OpenMeteoWeatherService>` in `Program.cs`
+
+
 ## 2026-04-12 — Phase 6: dashboard, cancel, complete, purge
 
 ### Added
