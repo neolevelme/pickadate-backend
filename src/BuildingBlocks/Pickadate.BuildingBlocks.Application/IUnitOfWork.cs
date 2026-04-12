@@ -1,4 +1,4 @@
-namespace Pickadate.BuildingBlocks.Infrastructure;
+namespace Pickadate.BuildingBlocks.Application;
 
 public interface IUnitOfWork
 {

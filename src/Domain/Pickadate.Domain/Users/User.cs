@@ -2,7 +2,6 @@ using Pickadate.BuildingBlocks.Domain;
 
 namespace Pickadate.Domain.Users;
 
-// Skeleton. Full implementation arrives in Faza 1 (auth flow).
 public class User : Entity
 {
     public Guid Id { get; private set; }
@@ -13,18 +12,28 @@ public class User : Entity
     public string? ProfileImageUrl { get; private set; }
     public UserRole Role { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public DateTime? LastLoginAt { get; private set; }
 
     private User() { }
 
-    public static User Create(string email, string? name = null)
+    public static User Create(string email)
     {
         return new User
         {
             Id = Guid.NewGuid(),
-            Email = email.ToLowerInvariant(),
-            Name = name,
+            Email = email.Trim().ToLowerInvariant(),
             Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    public void RecordLogin() => LastLoginAt = DateTime.UtcNow;
+
+    public void UpdateProfile(string? name, string? country, string? vibePreference, string? profileImageUrl)
+    {
+        Name = name;
+        Country = country;
+        VibePreference = vibePreference;
+        ProfileImageUrl = profileImageUrl;
     }
 }

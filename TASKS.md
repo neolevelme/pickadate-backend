@@ -34,17 +34,17 @@
 
 ## Faza 1 — Auth flow (email + 6-digit code)
 
-- [ ] Backend: `User` agregat (id, email, name, country, vibePreference, profileImageUrl, role)
-- [ ] Backend: `VerificationCode` entitet (email, code, expiresAt, usedAt)
-- [ ] Backend: `POST /api/auth/request-code` endpoint (generiše kod, šalje email)
-- [ ] Backend: `POST /api/auth/verify-code` endpoint (vraća JWT)
-- [ ] Backend: `EmailService` (MailKit, SMTP iz config-a)
-- [ ] Backend: JWT claims + middleware
-- [ ] Backend: EF migracija `001_InitialAuth`
-- [ ] Frontend: `/login` stranica (email input → code input → redirect)
-- [ ] Frontend: auto-fill podrška za 6-digit kod (`autocomplete="one-time-code"`, `inputmode="numeric"`)
-- [ ] Frontend: auth store persistence u `localStorage`
-- [ ] Frontend: `AuthGuard` komponenta za zaštićene stranice
+- [x] Backend: `User` agregat (id, email, name, country, vibePreference, profileImageUrl, role)
+- [x] Backend: `VerificationCode` entitet (email, code, expiresAt, usedAt)
+- [x] Backend: `POST /api/auth/request-code` endpoint (generiše kod, šalje email)
+- [x] Backend: `POST /api/auth/verify-code` endpoint (vraća JWT)
+- [x] Backend: `EmailService` (MailKit, SMTP iz config-a, konzolni fallback za dev)
+- [x] Backend: JWT claims + middleware
+- [x] Backend: EF migracija `001_InitialAuth`
+- [x] Frontend: `/login` stranica (email input → code input → redirect)
+- [x] Frontend: auto-fill podrška za 6-digit kod (`autocomplete="one-time-code"`, `inputmode="numeric"`)
+- [x] Frontend: auth store persistence u `localStorage`
+- [ ] Frontend: `AuthGuard` komponenta za zaštićene stranice (Faza 2 — kad bude trebala)
 
 ## Faza 2 — Kreiranje poziva (5-step wizard)
 

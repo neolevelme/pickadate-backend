@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
 using Pickadate.Domain.Users;
 
@@ -8,6 +9,7 @@ public class PickadateDbContext : DbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
 
     public PickadateDbContext(DbContextOptions<PickadateDbContext> options) : base(options) { }
 
@@ -39,6 +41,16 @@ public class PickadateDbContext : DbContext
             b.Property(i => i.Message).HasMaxLength(140);
             b.Property(i => i.MediaUrl).HasMaxLength(512);
             b.Ignore(i => i.DomainEvents);
+        });
+
+        modelBuilder.Entity<VerificationCode>(b =>
+        {
+            b.ToTable("verification_codes");
+            b.HasKey(v => v.Id);
+            b.Property(v => v.Email).IsRequired().HasMaxLength(320);
+            b.Property(v => v.Code).IsRequired().HasMaxLength(6);
+            b.HasIndex(v => new { v.Email, v.ExpiresAt });
+            b.Ignore(v => v.DomainEvents);
         });
     }
 }

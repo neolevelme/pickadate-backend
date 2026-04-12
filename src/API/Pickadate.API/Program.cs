@@ -6,7 +6,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Pickadate.API.Middleware;
+using Pickadate.Application.Behaviors;
+using Pickadate.Application.Contracts;
+using Pickadate.BuildingBlocks.Application;
+using Pickadate.Domain.Auth;
+using Pickadate.Domain.Users;
+using Pickadate.Infrastructure;
 using Pickadate.Infrastructure.Persistence;
+using Pickadate.Infrastructure.Repositories;
+using Pickadate.Infrastructure.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,12 +32,27 @@ builder.Host.UseSerilog();
 builder.Services.AddDbContext<PickadateDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PickadateDb")));
 
-// MediatR — registers handlers from the Application assembly.
+// MediatR
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(Pickadate.Application.AssemblyMarker).Assembly));
 
-// FluentValidation
+// FluentValidation + pipeline behavior
 builder.Services.AddValidatorsFromAssembly(typeof(Pickadate.Application.AssemblyMarker).Assembly);
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+// Options
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+
+// Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+
+// Services
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -114,7 +137,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Auto-migrate database on startup (skipped if no migrations exist yet — Faza 1).
+// Auto-migrate database on startup.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PickadateDbContext>();

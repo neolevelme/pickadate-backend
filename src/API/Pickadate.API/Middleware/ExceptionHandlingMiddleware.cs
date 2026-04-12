@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FluentValidation;
+using Pickadate.Application.Auth.Commands;
 using Pickadate.BuildingBlocks.Domain;
 
 namespace Pickadate.API.Middleware;
@@ -28,6 +29,10 @@ public class ExceptionHandlingMiddleware
         catch (BusinessRuleValidationException ex)
         {
             await WriteProblem(context, StatusCodes.Status422UnprocessableEntity, "Business rule violation", ex.Details);
+        }
+        catch (InvalidCredentialsException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status401Unauthorized, "Unauthorized", ex.Message);
         }
         catch (Exception ex)
         {
