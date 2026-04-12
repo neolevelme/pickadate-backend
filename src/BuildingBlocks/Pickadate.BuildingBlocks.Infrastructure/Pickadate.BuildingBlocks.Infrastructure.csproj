@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pickadate.BuildingBlocks.Domain\Pickadate.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

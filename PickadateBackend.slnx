@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/API/">
+    <Project Path="src/API/Pickadate.API/Pickadate.API.csproj" />
+  </Folder>
+  <Folder Name="/src/Application/">
+    <Project Path="src/Application/Pickadate.Application/Pickadate.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Pickadate.BuildingBlocks.Application/Pickadate.BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/Pickadate.BuildingBlocks.Domain/Pickadate.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/Pickadate.BuildingBlocks.Infrastructure/Pickadate.BuildingBlocks.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Domain/">
+    <Project Path="src/Domain/Pickadate.Domain/Pickadate.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/Pickadate.Infrastructure/Pickadate.Infrastructure.csproj" />
+  </Folder>
+</Solution>

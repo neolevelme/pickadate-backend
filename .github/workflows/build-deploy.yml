@@ -1,0 +1,163 @@
+# =============================================================================
+# pickadate.me Backend - Build & Deploy Pipeline
+# =============================================================================
+# Triggers on push to release/dev or release/prod branches.
+# Builds Docker image, pushes to GitLab Container Registry, and updates
+# the image tag in the infrastructure repo for Fleet GitOps deployment.
+#
+# release/dev  -> builds & deploys to dev environment
+# release/prod -> builds & deploys to prod + creates GitHub Release
+#
+# Image tag format:
+#   prod: 1.0.<run_number>                   (e.g. 1.0.42)
+#   dev:  1.0.<run_number>-dev.<date>        (e.g. 1.0.42-dev.20260412)
+# =============================================================================
+
+name: Build & Deploy
+
+on:
+  push:
+    branches: [release/dev, release/prod]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.gitlab.com
+  APP_VERSION_MAJOR: "1"
+  APP_VERSION_MINOR: "0"
+
+jobs:
+  build-and-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+      environment: ${{ steps.env.outputs.environment }}
+
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref_name }}" == "release/prod" ]]; then
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+            echo "image_suffix=backend-prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=dev" >> "$GITHUB_OUTPUT"
+            echo "image_suffix=backend-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate image tag
+        id: meta
+        run: |
+          BASE="${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${{ github.run_number }}"
+          if [[ "${{ steps.env.outputs.environment }}" == "prod" ]]; then
+            VERSION="${BASE}"
+          else
+            DATE=$(date -u +%Y%m%d)
+            VERSION="${BASE}-dev.${DATE}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitLab Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.GITLAB_REGISTRY_USER }}
+          password: ${{ secrets.GITLAB_REGISTRY_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/nlk-misc/container-images/pickadate/${{ steps.env.outputs.image_suffix }}:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/nlk-misc/container-images/pickadate/${{ steps.env.outputs.image_suffix }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+
+  update-deployment:
+    name: Update Deployment Tag
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    outputs:
+      infra_commit_sha: ${{ steps.push.outputs.infra_commit_sha }}
+
+    steps:
+      - name: Checkout nlk-misc-infrastructure repo
+        uses: actions/checkout@v4
+        with:
+          repository: neolevelme/nlk-misc-infrastructure
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          ref: main
+
+      - name: Update image tag in values file
+        run: |
+          TAG="${{ needs.build-and-push.outputs.image_tag }}"
+          ENV="${{ needs.build-and-push.outputs.environment }}"
+          FILE="helm/clusters/nlk-misc/${ENV}/pickadate-backend/values.yaml"
+          sed -i "s|tag:.*|tag: \"${TAG}\"|" "${FILE}"
+
+      - name: Commit and push
+        id: push
+        run: |
+          ENV="${{ needs.build-and-push.outputs.environment }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/clusters/nlk-misc/${ENV}/pickadate-backend/values.yaml
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "infra_commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "deploy(${ENV}): pickadate-backend ${{ needs.build-and-push.outputs.image_tag }}"
+          git push
+          echo "infra_commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-and-push, update-deployment]
+    if: github.ref_name == 'release/prod'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-and-push.outputs.image_tag }}
+          name: Backend v${{ needs.build-and-push.outputs.image_tag }}
+          generate_release_notes: true
+          prerelease: false
+          body: |
+            ## Production Deployment
+
+            | | |
+            |---|---|
+            | **Version** | `${{ needs.build-and-push.outputs.image_tag }}` |
+            | **Environment** | `nlk-misc-prod` |
+            | **Deployed at** | ${{ github.event.head_commit.timestamp }} |
+
+            ### Container Image
+            ```
+            registry.gitlab.com/nlk-misc/container-images/pickadate/backend-prod:${{ needs.build-and-push.outputs.image_tag }}
+            ```
+
+            ### Source
+            - **Backend commit:** [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            - **Infra commit:** [`${{ needs.update-deployment.outputs.infra_commit_sha }}`](https://github.com/neolevelme/nlk-misc-infrastructure/commit/${{ needs.update-deployment.outputs.infra_commit_sha }})
