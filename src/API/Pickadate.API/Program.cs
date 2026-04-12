@@ -62,6 +62,9 @@ builder.Services.AddScoped<IClientContext, ClientContext>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
 
+// Background jobs
+builder.Services.AddHostedService<InvitationPurgeHostedService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // JWT Authentication

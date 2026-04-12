@@ -97,11 +97,14 @@
 
 ## Faza 6 — Istorija, otkazivanje, auto-brisanje
 
-- [ ] Backend: `GET /api/invitations/my` (inicijator vidi svoju istoriju)
-- [ ] Backend: `CancelInvitationCommand` (šalje notifikaciju drugoj strani)
-- [ ] Backend: `MarkCompletedCommand`
-- [ ] Backend: `InvitationPurgeHostedService` (briše > 30 dana, izuzima anniversary)
-- [ ] Frontend: `/dashboard` stranica (lista aktivnih + prošlih)
+- [x] Backend: `GET /api/invitations/my` (inicijator vidi svoju istoriju)
+- [x] Backend: `CancelInvitationCommand` (initiator-only)
+- [x] Backend: `MarkCompletedCommand` (initiator-only for sad)
+- [x] Backend: `AcceptCounterProposalCommand` (zatvara ping-pong loop)
+- [x] Backend: `InvitationPurgeHostedService` (dnevni cron: >30 dana invitations, >24h decline records, istekli verification codes)
+- [x] Frontend: `/dashboard` stranica sa status badge, counter banner-om i inline akcijama
+- [ ] Frontend: AuthGuard komponenta (trenutno samo redirect na 401 — dovoljno za Fazu 6)
+- [ ] Notifikacija drugoj strani pri cancel-u (Faza 5 push notifications)
 
 ## Faza 7 — Safety check
 

@@ -2,6 +2,20 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-12 — Faza 6: dashboard, cancel, complete, purge
+
+### Added
+- `Invitation.Cancel()`, `Invitation.MarkCompleted()`, `Invitation.AcceptCounterProposal(counter)` domain methods guarded by `CanBeCancelled`, `MustBeAccepted`, `MustBeInCounteredState` business rules. `AcceptCounterProposal` merges the counter's new time and/or place into the invitation and flips status to Accepted — this closes the ping-pong loop.
+- `IInvitationRepository.ListForInitiatorAsync` + `PurgeOlderThanAsync` (ExecuteDelete-based bulk purge).
+- `GetMyInvitationsQuery` returns the caller's invitations (newest first) with the latest counter-proposal attached for each.
+- `CancelInvitationCommand`, `MarkCompletedCommand`, `AcceptCounterProposalCommand` — all initiator-only, validated against the caller via `ICurrentUser`.
+- `InvitationsController` new endpoints: `GET /api/invitations/my`, `POST /{slug}/cancel`, `POST /{slug}/complete`, `POST /{slug}/accept-counter`.
+- `InvitationPurgeHostedService` — `BackgroundService` running every 24h that deletes invitations with `MeetingAt` > 30 days in the past (spec §10), decline records > 24h (spec §12), and expired verification codes. First run happens one minute after startup so migrations and the initial request burst have settled.
+
+### Fixed
+- **Faza 3 regression**: `InvitationsController` and `ExceptionHandlingMiddleware` reverted to their Faza 2 shapes after a Write that silently failed, so the accept / counter / decline endpoints from Faza 3 were never actually served — the frontend was hitting 404s. Re-applied the endpoint definitions and exception mappings (`InvitationNotFoundException` → 404, `TooManyDeclinesException` → 429, `UnauthorizedAccessException` → 401).
+
+
 ## 2026-04-12 — Faza 3: accept / counter / decline
 
 ### Added

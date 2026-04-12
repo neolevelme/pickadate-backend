@@ -95,6 +95,41 @@ public class Invitation : Entity
     }
 
     /// <summary>
+    /// Initiator accepts the recipient's counter-proposal. Merges the counter's
+    /// new time / place into the invitation's own fields, then transitions to
+    /// Accepted. Pass in the latest counter — caller is responsible for fetching it.
+    /// </summary>
+    public void AcceptCounterProposal(CounterProposal counter)
+    {
+        if (counter.InvitationId != Id)
+            throw new ArgumentException("Counter-proposal belongs to a different invitation.", nameof(counter));
+        CheckRule(new MustBeInCounteredState(Status));
+
+        if (counter.NewMeetingAt is not null)
+            MeetingAt = counter.NewMeetingAt.Value;
+        if (counter.NewPlace is not null)
+            Place = counter.NewPlace;
+
+        Status = InvitationStatus.Accepted;
+        RespondedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Initiator cancels an open invitation at any point before it's accepted/completed.</summary>
+    public void Cancel()
+    {
+        CheckRule(new CanBeCancelled(Status));
+        Status = InvitationStatus.Cancelled;
+        RespondedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Either side marks the meeting as completed after it happened.</summary>
+    public void MarkCompleted()
+    {
+        CheckRule(new MustBeAccepted(Status));
+        Status = InvitationStatus.Completed;
+    }
+
+    /// <summary>
     /// Spec §4 Opcija 2: recipient sends a counter-proposal for time, place, or both.
     /// Increments the round and flips status to Countered. Rejects when 3 rounds are already spent.
     /// </summary>
@@ -175,4 +210,29 @@ internal sealed class CounterRoundsNotExhausted : IBusinessRule
     public CounterRoundsNotExhausted(int round) => _round = round;
     public bool IsBroken() => _round >= Invitation.MaxCounterRounds;
     public string Message => $"Counter-proposal rounds exhausted (max {Invitation.MaxCounterRounds}).";
+}
+
+internal sealed class MustBeInCounteredState : IBusinessRule
+{
+    private readonly InvitationStatus _status;
+    public MustBeInCounteredState(InvitationStatus status) => _status = status;
+    public bool IsBroken() => _status != InvitationStatus.Countered;
+    public string Message => "There is no counter-proposal to accept.";
+}
+
+internal sealed class CanBeCancelled : IBusinessRule
+{
+    private readonly InvitationStatus _status;
+    public CanBeCancelled(InvitationStatus status) => _status = status;
+    public bool IsBroken() => _status is InvitationStatus.Completed or InvitationStatus.Cancelled
+        or InvitationStatus.Expired or InvitationStatus.Declined;
+    public string Message => "This invitation can no longer be cancelled.";
+}
+
+internal sealed class MustBeAccepted : IBusinessRule
+{
+    private readonly InvitationStatus _status;
+    public MustBeAccepted(InvitationStatus status) => _status = status;
+    public bool IsBroken() => _status != InvitationStatus.Accepted;
+    public string Message => "Only accepted invitations can be marked completed.";
 }

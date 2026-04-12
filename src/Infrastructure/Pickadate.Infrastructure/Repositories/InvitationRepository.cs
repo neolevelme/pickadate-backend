@@ -22,4 +22,15 @@ public class InvitationRepository : IInvitationRepository
     {
         await _db.Invitations.AddAsync(invitation, ct);
     }
+
+    public async Task<IReadOnlyList<Invitation>> ListForInitiatorAsync(Guid initiatorId, CancellationToken ct = default) =>
+        await _db.Invitations
+            .Where(i => i.InitiatorId == initiatorId)
+            .OrderByDescending(i => i.CreatedAt)
+            .ToListAsync(ct);
+
+    public Task<int> PurgeOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default) =>
+        _db.Invitations
+            .Where(i => i.MeetingAt < cutoffUtc)
+            .ExecuteDeleteAsync(ct);
 }

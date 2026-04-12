@@ -6,4 +6,10 @@ public interface IInvitationRepository
     Task<Invitation?> GetBySlugAsync(string slug, CancellationToken ct = default);
     Task<bool> SlugExistsAsync(string slug, CancellationToken ct = default);
     Task AddAsync(Invitation invitation, CancellationToken ct = default);
+
+    /// <summary>Returns the invitations created by a user, newest first.</summary>
+    Task<IReadOnlyList<Invitation>> ListForInitiatorAsync(Guid initiatorId, CancellationToken ct = default);
+
+    /// <summary>Removes invitations whose meeting is more than 30 days in the past.</summary>
+    Task<int> PurgeOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

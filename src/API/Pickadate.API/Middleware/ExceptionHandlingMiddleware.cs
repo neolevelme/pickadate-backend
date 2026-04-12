@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentValidation;
 using Pickadate.Application.Auth.Commands;
+using Pickadate.Application.Invitations.Commands;
 using Pickadate.BuildingBlocks.Domain;
 
 namespace Pickadate.API.Middleware;
@@ -33,6 +34,18 @@ public class ExceptionHandlingMiddleware
         catch (InvalidCredentialsException ex)
         {
             await WriteProblem(context, StatusCodes.Status401Unauthorized, "Unauthorized", ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status401Unauthorized, "Unauthorized", ex.Message);
+        }
+        catch (InvitationNotFoundException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status404NotFound, "Not found", ex.Message);
+        }
+        catch (TooManyDeclinesException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status429TooManyRequests, "Too many requests", ex.Message);
         }
         catch (Exception ex)
         {
