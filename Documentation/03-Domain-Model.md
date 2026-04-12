@@ -34,7 +34,7 @@ DRAFT -> PENDING -> VIEWED -> { ACCEPTED | COUNTERED | DECLINED }
 
 Terminal states: `ACCEPTED`, `DECLINED`, `CANCELLED`, `COMPLETED`, `EXPIRED`.
 
-## Coming in later Fazas
+## Coming in later phases
 
 - `VerificationCode` — email + 6-digit code, 10-min expiry
 - `CounterProposal` — one round of changes

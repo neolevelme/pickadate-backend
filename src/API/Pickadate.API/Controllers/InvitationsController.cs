@@ -44,9 +44,9 @@ public class InvitationsController : ControllerBase
         return Ok(list);
     }
 
-    // ---------- recipient actions (Faza 3) ----------
+    // ---------- recipient actions (Phase 3) ----------
 
-    /// <summary>Spec §4 Opcija 1. Requires the recipient to be authenticated.</summary>
+    /// <summary>Spec §4 Option 1. Requires the recipient to be authenticated.</summary>
     [Authorize]
     [HttpPost("{slug}/accept")]
     public async Task<IActionResult> Accept(string slug, CancellationToken ct)
@@ -55,7 +55,7 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Spec §4 Opcija 2. Requires auth; rejected after 3 rounds.</summary>
+    /// <summary>Spec §4 Option 2. Requires auth; rejected after 3 rounds.</summary>
     public record CounterProposeBody(
         DateTime? NewMeetingAtUtc,
         string? PlaceGoogleId,
@@ -79,7 +79,7 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Spec §4 Opcija 3. Anonymous allowed; IP-rate-limited (20/day).</summary>
+    /// <summary>Spec §4 Option 3. Anonymous allowed; IP-rate-limited (20/day).</summary>
     public record DeclineBody(string? Reason);
 
     [AllowAnonymous]
@@ -90,7 +90,7 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    // ---------- initiator actions (Faza 6) ----------
+    // ---------- initiator actions (Phase 6) ----------
 
     /// <summary>Initiator cancels an invitation before it's accepted or completed.</summary>
     [Authorize]

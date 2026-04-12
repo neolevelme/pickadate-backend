@@ -7,7 +7,7 @@ public class Invitation : Entity
     // Spec §3 korak 5: unopened link expires after 72h.
     private static readonly TimeSpan UnopenedTtl = TimeSpan.FromHours(72);
 
-    // Spec §4 Opcija 2: at most 3 counter-proposal rounds total.
+    // Spec §4 Option 2: at most 3 counter-proposal rounds total.
     public const int MaxCounterRounds = 3;
 
     public Guid Id { get; private set; }
@@ -76,7 +76,7 @@ public class Invitation : Entity
         FirstViewedAt ??= nowUtc;
     }
 
-    /// <summary>Spec §4 Opcija 1: recipient accepts the invitation (auth required upstream).</summary>
+    /// <summary>Spec §4 Option 1: recipient accepts the invitation (auth required upstream).</summary>
     public void Accept()
     {
         CheckRule(new CanBeRespondedTo(Status));
@@ -84,7 +84,7 @@ public class Invitation : Entity
         RespondedAt = DateTime.UtcNow;
     }
 
-    /// <summary>Spec §4 Opcija 3: recipient declines (anonymous allowed). Comment is optional (≤80 chars).</summary>
+    /// <summary>Spec §4 Option 3: recipient declines (anonymous allowed). Comment is optional (≤80 chars).</summary>
     public void Decline(string? reason)
     {
         CheckRule(new CanBeRespondedTo(Status));
@@ -130,7 +130,7 @@ public class Invitation : Entity
     }
 
     /// <summary>
-    /// Spec §4 Opcija 2: recipient sends a counter-proposal for time, place, or both.
+    /// Spec §4 Option 2: recipient sends a counter-proposal for time, place, or both.
     /// Increments the round and flips status to Countered. Rejects when 3 rounds are already spent.
     /// </summary>
     public CounterProposal CounterPropose(Guid proposerId, DateTime? newMeetingAtUtc, Place? newPlace)
@@ -145,9 +145,10 @@ public class Invitation : Entity
         Status = InvitationStatus.Countered;
         RespondedAt = DateTime.UtcNow;
 
-        // Auto-close when the max round count is reached — spec §4 Opcija 2 "nakon 3 runde
-        // automatski se zatvara ako nema dogovora". This is a conservative reading: the
-        // third counter is the last allowed action and the invitation expires right after.
+        // Auto-close when the max round count is reached — spec §4 Option 2 says the
+        // invitation closes automatically once three rounds have passed without agreement.
+        // Conservative reading: the third counter is the last allowed action and the
+        // invitation expires right after.
         if (CounterRound >= MaxCounterRounds)
         {
             Status = InvitationStatus.Expired;

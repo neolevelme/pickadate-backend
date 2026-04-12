@@ -2,7 +2,7 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
-## 2026-04-12 — Faza 6: dashboard, cancel, complete, purge
+## 2026-04-12 — Phase 6: dashboard, cancel, complete, purge
 
 ### Added
 - `Invitation.Cancel()`, `Invitation.MarkCompleted()`, `Invitation.AcceptCounterProposal(counter)` domain methods guarded by `CanBeCancelled`, `MustBeAccepted`, `MustBeInCounteredState` business rules. `AcceptCounterProposal` merges the counter's new time and/or place into the invitation and flips status to Accepted — this closes the ping-pong loop.
@@ -13,10 +13,10 @@ All notable changes to the pickadate.me backend are documented here.
 - `InvitationPurgeHostedService` — `BackgroundService` running every 24h that deletes invitations with `MeetingAt` > 30 days in the past (spec §10), decline records > 24h (spec §12), and expired verification codes. First run happens one minute after startup so migrations and the initial request burst have settled.
 
 ### Fixed
-- **Faza 3 regression**: `InvitationsController` and `ExceptionHandlingMiddleware` reverted to their Faza 2 shapes after a Write that silently failed, so the accept / counter / decline endpoints from Faza 3 were never actually served — the frontend was hitting 404s. Re-applied the endpoint definitions and exception mappings (`InvitationNotFoundException` → 404, `TooManyDeclinesException` → 429, `UnauthorizedAccessException` → 401).
+- **Phase 3 regression**: `InvitationsController` and `ExceptionHandlingMiddleware` reverted to their Phase 2 shapes after a Write that silently failed, so the accept / counter / decline endpoints from Phase 3 were never actually served — the frontend was hitting 404s. Re-applied the endpoint definitions and exception mappings (`InvitationNotFoundException` → 404, `TooManyDeclinesException` → 429, `UnauthorizedAccessException` → 401).
 
 
-## 2026-04-12 — Faza 3: accept / counter / decline
+## 2026-04-12 — Phase 3: accept / counter / decline
 
 ### Added
 - `Invitation.Accept()`, `Invitation.Decline(reason)`, `Invitation.CounterPropose(proposerId, newMeetingAtUtc, newPlace)` domain methods guarded by `CanBeRespondedTo`, `DeclineReasonWithinLimit` (≤80), and `CounterRoundsNotExhausted` (max 3) business rules
@@ -32,7 +32,7 @@ All notable changes to the pickadate.me backend are documented here.
 - `ExceptionHandlingMiddleware` maps `InvitationNotFoundException` → 404 and `TooManyDeclinesException` → 429
 - EF migration `InvitationActions` — `counter_proposals` table (with owned `new_place_*` columns), `decline_records` table, plus `decline_reason` / `responded_at` columns on `invitations`
 
-## 2026-04-12 — Faza 2: invitation create + public view
+## 2026-04-12 — Phase 2: invitation create + public view
 
 ### Added
 - `Place` value object (`GooglePlaceId`, `Name`, `FormattedAddress`, `Lat`, `Lng`) with domain validation
@@ -50,7 +50,7 @@ All notable changes to the pickadate.me backend are documented here.
 ### Changed
 - Infrastructure project now has `FrameworkReference Microsoft.AspNetCore.App` so `CurrentUser` can consume `IHttpContextAccessor`
 
-## 2026-04-12 — Faza 1: email + 6-digit code auth
+## 2026-04-12 — Phase 1: email + 6-digit code auth
 
 ### Added
 - `VerificationCode` entity (10-min TTL) + `IVerificationCodeRepository`

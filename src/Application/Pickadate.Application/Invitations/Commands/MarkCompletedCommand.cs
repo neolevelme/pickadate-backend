@@ -31,7 +31,7 @@ public class MarkCompletedCommandHandler : IRequestHandler<MarkCompletedCommand>
 
         // Spec §10: "Označi sastanak kao završen" is available to the initiator
         // and (once recipient tracking lands) the recipient. For now we allow
-        // the initiator only, since that's who has the dashboard in Faza 6.
+        // the initiator only, since that's who has the dashboard in Phase 6.
         if (invitation.InitiatorId != userId)
             throw new UnauthorizedAccessException("Only the initiator can mark this invitation completed.");
 

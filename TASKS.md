@@ -1,147 +1,147 @@
 # pickadate.me — TASKS
 
-> Roadmap za implementaciju. Označi redove kako se završavaju.
-> Sinhronizuj između oba repozitorijuma (backend i frontend).
+> Implementation roadmap. Check items off as they land.
+> Keep this file in sync between the backend and frontend repositories.
 
-## Faza 0 — Scaffolding (trenutna faza)
+## Phase 0 — Scaffolding
 
-- [x] Sačuvati `SPECIFICATION.md` u oba repozitorijuma
-- [x] Sačuvati `TASKS.md` u oba repozitorijuma
+- [x] Save `SPECIFICATION.md` into both repositories
+- [x] Save `TASKS.md` into both repositories
 - [x] Backend: Clean Architecture skeleton (.NET 10)
   - [x] `Directory.Build.props`, `PickadateBackend.slnx`
   - [x] BuildingBlocks (Domain / Application / Infrastructure)
-  - [x] Domain / Application / Infrastructure / API projekti
-  - [x] `Program.cs` sa MediatR, FluentValidation, EF Core, Serilog, JWT, Swagger, CORS
-  - [x] `appsettings.json` (samo placeholderi, bez pravih secret-a)
+  - [x] Domain / Application / Infrastructure / API projects
+  - [x] `Program.cs` with MediatR, FluentValidation, EF Core, Serilog, JWT, Swagger, CORS
+  - [x] `appsettings.json` (placeholders only, no real secrets)
   - [x] `Dockerfile` (multi-stage, non-root)
-  - [x] `docker-compose.yml` (Postgres 16 na portu 5434)
+  - [x] `docker-compose.yml` (Postgres 16 on port 5434)
   - [x] Exception handling middleware
   - [x] Health controller
 - [x] Frontend: Astro skeleton
-  - [x] `astro.config.mjs` sa React, Tailwind v4, Sitemap, Node adapter
-  - [x] `tsconfig.json` sa `@/*` aliasom
-  - [x] SEO Head komponenta (OG, Twitter, structured data)
+  - [x] `astro.config.mjs` with React, Tailwind v4, Sitemap, Node adapter
+  - [x] `tsconfig.json` with `@/*` alias
+  - [x] SEO Head component (OG, Twitter, structured data)
   - [x] BaseLayout / LandingLayout
-  - [x] Integrisan Magic Patterns landing (Navigation, Hero, HowItWorks, Activities, Preview, FinalCTA, Footer)
-  - [x] `robots.txt` ruta
+  - [x] Magic Patterns landing integrated (Navigation, Hero, HowItWorks, Activities, Preview, FinalCTA, Footer)
+  - [x] `robots.txt` route
   - [x] `src/lib/api/client.ts` (fetch wrapper)
   - [x] `src/lib/store/auth-store.ts` (Zustand)
-  - [x] `Dockerfile` sa build-arg env vars
+  - [x] `Dockerfile` with build-arg env vars
   - [x] `.env.example`
-- [x] Oba: `Documentation/` folder i `CHANGELOG.md`
-- [x] Oba: `.github/workflows/build-deploy.yml` (GitLab registry + GitOps Helm update)
-- [x] Prvi commit + push na oba repozitorijuma
+- [x] Both: `Documentation/` folder and `CHANGELOG.md`
+- [x] Both: `.github/workflows/build-deploy.yml` (GitLab registry + GitOps Helm update)
+- [x] Initial commit + push for both repositories
 
-## Faza 1 — Auth flow (email + 6-digit code)
+## Phase 1 — Auth flow (email + 6-digit code)
 
-- [x] Backend: `User` agregat (id, email, name, country, vibePreference, profileImageUrl, role)
-- [x] Backend: `VerificationCode` entitet (email, code, expiresAt, usedAt)
-- [x] Backend: `POST /api/auth/request-code` endpoint (generiše kod, šalje email)
-- [x] Backend: `POST /api/auth/verify-code` endpoint (vraća JWT)
-- [x] Backend: `EmailService` (MailKit, SMTP iz config-a, konzolni fallback za dev)
+- [x] Backend: `User` aggregate (id, email, name, country, vibePreference, profileImageUrl, role)
+- [x] Backend: `VerificationCode` entity (email, code, expiresAt, usedAt)
+- [x] Backend: `POST /api/auth/request-code` endpoint (generates code, sends email)
+- [x] Backend: `POST /api/auth/verify-code` endpoint (returns JWT)
+- [x] Backend: `EmailService` (MailKit, SMTP from config, console fallback for dev)
 - [x] Backend: JWT claims + middleware
-- [x] Backend: EF migracija `001_InitialAuth`
-- [x] Frontend: `/login` stranica (email input → code input → redirect)
-- [x] Frontend: auto-fill podrška za 6-digit kod (`autocomplete="one-time-code"`, `inputmode="numeric"`)
-- [x] Frontend: auth store persistence u `localStorage`
-- [ ] Frontend: `AuthGuard` komponenta za zaštićene stranice (Faza 2 — kad bude trebala)
+- [x] Backend: EF migration `001_InitialAuth`
+- [x] Frontend: `/login` page (email input → code input → redirect)
+- [x] Frontend: auto-fill for 6-digit code (`autocomplete="one-time-code"`, `inputmode="numeric"`)
+- [x] Frontend: auth store persistence in `localStorage`
+- [ ] Frontend: `AuthGuard` component for protected routes (deferred — 401 redirect is enough for now)
 
-## Faza 2 — Kreiranje poziva (5-step wizard)
+## Phase 2 — Invitation creation (5-step wizard)
 
-- [x] Backend: `Invitation` agregat (pending → viewed; accept/counter/decline u Fazi 3)
+- [x] Backend: `Invitation` aggregate (pending → viewed; accept/counter/decline in Phase 3)
 - [x] Backend: `Place` value object (googlePlaceId, lat, lng, formattedAddress, name)
 - [x] Backend: `CreateInvitationCommand` + handler + validator
-- [x] Backend: `CreateAndPublish` u agregatu (generiše `xx-yyyy` slug, expiresAt = +72h)
-- [x] Backend: `GET /api/invitations/{slug}` (javni endpoint, lazy auth) + `RecordView`
-- [x] Backend: EF migracija `002_Invitations` (owned Place columns)
-- [x] Frontend: `/create` wizard stranica sa 5 koraka:
-  - [x] Korak 1 — Vibe (Kafa / Piće / Šetnja / Aktivnost / Večera / Custom)
-  - [x] Korak 2 — Mjesto (manualni inputi — Google Places je Faza 2.5)
-  - [x] Korak 3 — Vrijeme (date + time picker)
-  - [x] Korak 4 — Poruka (textarea + URL za media — Giphy picker je Faza 2.5)
-  - [x] Korak 5 — Pregled sa "Pošalji" dugmetom
-- [x] Frontend: javna `/i/[slug]` stranica (detalji + Google Maps link, accept/counter/decline su Faza 3)
-- [ ] Frontend: Google Maps JS SDK integracija (Faza 2.5)
-- [ ] Frontend: Giphy API integracija (Faza 2.5)
-- [ ] Backend: weather integracija u pregledu (Faza 4)
+- [x] Backend: `CreateAndPublish` factory on the aggregate (generates `xx-yyyy` slug, expiresAt = +72h)
+- [x] Backend: `GET /api/invitations/{slug}` (public endpoint, lazy auth) + `RecordView`
+- [x] Backend: EF migration `002_Invitations` (owned Place columns)
+- [x] Frontend: `/create` 5-step wizard
+  - [x] Step 1 — Vibe (Coffee / Drinks / Walk / Activity / Dinner / Custom)
+  - [x] Step 2 — Place (manual inputs — Google Places autocomplete is Phase 2.5)
+  - [x] Step 3 — Time (date + time picker)
+  - [x] Step 4 — Message (textarea + media URL — Giphy picker is Phase 2.5)
+  - [x] Step 5 — Preview + submit
+- [x] Frontend: public `/i/[slug]` page (details + Google Maps link — accept/counter/decline are Phase 3)
+- [ ] Frontend: Google Maps JS SDK integration (Phase 2.5)
+- [ ] Frontend: Giphy API integration (Phase 2.5)
+- [ ] Backend: weather integration in the preview (Phase 4)
 
-## Faza 3 — Otvaranje poziva (primalac)
+## Phase 3 — Opening the invitation (recipient)
 
-- [x] Frontend: `/i/[slug]` javna stranica (bez logina)
-- [x] Frontend: prikaz svih detalja + "Otvori u mapi" dugme (prognoza: Faza 4)
-- [x] Frontend: "Prihvatam" dugme → auth flow → status update (`?next=` podržan u login-u)
-- [x] Frontend: "Mogu, ali hajde da promijenimo" → auth flow → inline counter-proposal forma
-- [x] Frontend: "Odbij" → opcioni komentar (80 char) → status update (bez logina)
-- [x] Backend: `AcceptInvitationCommand` (zahtjeva auth)
-- [x] Backend: `CounterProposeInvitationCommand` (zahtjeva auth, max 3 runde, auto-close na 3.)
-- [x] Backend: `DeclineInvitationCommand` (anonimno + opcioni komentar ≤80)
-- [x] Backend: IP-based rate limiter za decline (20/dan, `DeclineRecord` entitet, 429 status)
-- [x] Backend: `RecordView` u `GetInvitationBySlugQuery` (Pending → Viewed)
-- [ ] Backend: "5 aktivnih poziva po browseru" rate limit (vraća se kad bude Faza 13 admin/abuse)
-- [ ] Backend: Initiator-side odgovor na counter (treba Faza 6 dashboard)
+- [x] Frontend: `/i/[slug]` public page (no login)
+- [x] Frontend: full details + "Open in Maps" button (weather is Phase 4)
+- [x] Frontend: "Accept" button → auth flow → status update (`?next=` honoured by login)
+- [x] Frontend: "Suggest a change" → auth flow → inline counter-proposal form
+- [x] Frontend: "Not this time" → optional comment (80 chars) → status update (no login)
+- [x] Backend: `AcceptInvitationCommand` (auth required)
+- [x] Backend: `CounterProposeInvitationCommand` (auth required, max 3 rounds, auto-close on the 3rd)
+- [x] Backend: `DeclineInvitationCommand` (anonymous + optional comment ≤80)
+- [x] Backend: IP-based decline rate limiter (20/day, `DeclineRecord` entity, HTTP 429)
+- [x] Backend: `RecordView` in `GetInvitationBySlugQuery` (Pending → Viewed)
+- [ ] Backend: "max 5 active invitations per browser" rate limit (deferred to a later abuse pass)
+- [x] Backend: initiator-side response to a counter (landed in Phase 6 dashboard via `AcceptCounterProposalCommand`)
 
-## Faza 4 — Vremenska prognoza
+## Phase 4 — Weather
 
 - [ ] Backend: `WeatherService` (Open-Meteo client)
-- [ ] Backend: caching (per lat/lng/date, TTL 6h)
-- [ ] Backend: uključiti prognozu u invitation detail response
-- [ ] Frontend: `WeatherCard` komponenta (ikona + temp + opis)
+- [ ] Backend: caching per lat/lng/date, 6h TTL
+- [ ] Backend: include weather in the invitation detail response
+- [ ] Frontend: `WeatherCard` component (icon + temperature + short description)
 
-## Faza 5 — Notifikacije
+## Phase 5 — Notifications
 
-- [ ] Backend: Web Push (VAPID keys, `PushSubscription` entitet)
+- [ ] Backend: Web Push (VAPID keys, `PushSubscription` entity)
 - [ ] Backend: `NotificationService` (push + email fallback)
-- [ ] Backend: hosted service za `reminder-24h` i `reminder-2h` cron
-- [ ] Frontend: prompt za push permissions nakon logina
-- [ ] Frontend: service worker za push
+- [ ] Backend: hosted service for the `reminder-24h` and `reminder-2h` cron
+- [ ] Frontend: prompt for push permissions after login
+- [ ] Frontend: service worker for push
 
-## Faza 6 — Istorija, otkazivanje, auto-brisanje
+## Phase 6 — History, cancelation, auto-purge
 
-- [x] Backend: `GET /api/invitations/my` (inicijator vidi svoju istoriju)
+- [x] Backend: `GET /api/invitations/my` (initiator sees their own history)
 - [x] Backend: `CancelInvitationCommand` (initiator-only)
-- [x] Backend: `MarkCompletedCommand` (initiator-only for sad)
-- [x] Backend: `AcceptCounterProposalCommand` (zatvara ping-pong loop)
-- [x] Backend: `InvitationPurgeHostedService` (dnevni cron: >30 dana invitations, >24h decline records, istekli verification codes)
-- [x] Frontend: `/dashboard` stranica sa status badge, counter banner-om i inline akcijama
-- [ ] Frontend: AuthGuard komponenta (trenutno samo redirect na 401 — dovoljno za Fazu 6)
-- [ ] Notifikacija drugoj strani pri cancel-u (Faza 5 push notifications)
+- [x] Backend: `MarkCompletedCommand` (initiator-only for now)
+- [x] Backend: `AcceptCounterProposalCommand` (closes the ping-pong loop)
+- [x] Backend: `InvitationPurgeHostedService` (daily cron: >30d invitations, >24h decline records, expired verification codes)
+- [x] Frontend: `/dashboard` page with status badges, counter banner, and inline actions
+- [ ] Frontend: `AuthGuard` component (current 401 redirect is enough for now)
+- [ ] Notify the other party on cancel (depends on Phase 5 push notifications)
 
-## Faza 7 — Safety check
+## Phase 7 — Safety check
 
-- [ ] Backend: `SafetyCheck` entitet + `CreateSafetyCheckCommand`
-- [ ] Backend: hosted service za slanje alarma ako nije potvrđen
-- [ ] Frontend: safety check wizard na ekranu potvrde
-- [ ] Frontend: `/safety/[token]` javna ruta za prijatelja
+- [ ] Backend: `SafetyCheck` entity + `CreateSafetyCheckCommand`
+- [ ] Backend: hosted service that fires the alert when check-in is missed
+- [ ] Frontend: safety check wizard on the confirmation screen
+- [ ] Frontend: `/safety/[token]` public route for the friend
 
-## Faza 8 — QR kod
+## Phase 8 — QR code
 
-- [ ] Frontend: QR kod generisanje klijentski (npr. `qrcode.react`)
-- [ ] Frontend: modal za prikaz QR koda na stranici potvrde
+- [ ] Frontend: client-side QR code generation (e.g. `qrcode.react`)
+- [ ] Frontend: modal showing the QR code on the confirmation screen
 
-## Faza 9 — Anniversary mode
+## Phase 9 — Anniversary mode
 
-- [ ] Backend: `Anniversary` entitet (userPair, firstDateAt)
-- [ ] Backend: cron za godišnjice → push + email
-- [ ] Frontend: toggle u podešavanjima
+- [ ] Backend: `Anniversary` entity (user pair, firstDateAt)
+- [ ] Backend: yearly cron → push + email
+- [ ] Frontend: toggle in settings
 
-## Faza 10 — SEO & performance
+## Phase 10 — SEO & performance
 
-- [ ] Frontend: `sitemap.xml` whitelist (landing, about, faq, privacy, terms, contact)
-- [ ] Frontend: `robots.txt` (blokira sve `/i/*`, `/dashboard`, `/create`)
-- [ ] Frontend: Open Graph slike za landing
-- [ ] Frontend: structured data (JSON-LD WebApplication)
-- [ ] Frontend: Lighthouse audit ≥ 95 na svim javnim stranicama
-- [ ] Frontend: hreflang za multi-jezik
+- [ ] Frontend: `sitemap.xml` allow-list (landing, about, faq, privacy, terms, contact)
+- [ ] Frontend: `robots.txt` (blocks all of `/i/*`, `/dashboard`, `/create`)
+- [ ] Frontend: Open Graph images for the landing page
+- [ ] Frontend: structured data (JSON-LD `WebApplication`)
+- [ ] Frontend: Lighthouse audit ≥ 95 on every public page
+- [ ] Frontend: hreflang for multi-language support
 
-## Faza 11 — Admin
+## Phase 11 — Admin
 
 - [ ] Backend: admin endpoints (`/api/admin/users`, `/api/admin/flags`)
-- [ ] Frontend: `/admin` stranica (jednostavna)
+- [ ] Frontend: simple `/admin` page
 
-## Faza 12 — Launch
+## Phase 12 — Launch
 
-- [ ] Privacy policy, Terms, Cookie policy, Disclaimer stranice
+- [ ] Privacy policy, Terms, Cookie policy, Disclaimer pages
 - [ ] GDPR cookie banner
-- [ ] "Obriši nalog" flow
-- [ ] Load test (k6 ili Artillery)
-- [ ] Deploy u prod
+- [ ] "Delete my account" flow
+- [ ] Load test (k6 or Artillery)
+- [ ] Deploy to production

@@ -10,7 +10,7 @@ namespace Pickadate.Infrastructure.Services;
 /// <summary>
 /// Daily background job that enforces spec §10 data minimization rules:
 /// - Invitations with a meeting more than 30 days in the past are deleted
-///   (Anniversary-mode invitations are exempted once Faza 9 introduces them)
+///   (Anniversary-mode invitations are exempted once Phase 9 introduces them)
 /// - Anonymous decline records expire after 24h (spec §12)
 /// - Unused verification codes expire after their TTL
 /// </summary>
