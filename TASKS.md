@@ -116,8 +116,8 @@
 
 ## Phase 8 — QR code
 
-- [ ] Frontend: client-side QR code generation (e.g. `qrcode.react`)
-- [ ] Frontend: modal showing the QR code on the confirmation screen
+- [x] Frontend: client-side QR code generation (`qrcode` npm package, SVG output)
+- [x] Frontend: `QrCodeModal` component wired to a dashboard "Show QR" button
 
 ## Phase 9 — Anniversary mode
 
@@ -127,12 +127,13 @@
 
 ## Phase 10 — SEO & performance
 
-- [ ] Frontend: `sitemap.xml` allow-list (landing, about, faq, privacy, terms, contact)
-- [ ] Frontend: `robots.txt` (blocks all of `/i/*`, `/dashboard`, `/create`)
-- [ ] Frontend: Open Graph images for the landing page
-- [ ] Frontend: structured data (JSON-LD `WebApplication`)
-- [ ] Frontend: Lighthouse audit ≥ 95 on every public page
-- [ ] Frontend: hreflang for multi-language support
+- [x] Frontend: `sitemap.xml` allow-list (landing + 7 public legal/marketing pages)
+- [x] Frontend: `robots.txt` (blocks `/i/*`, `/dashboard`, `/create`, `/login`, `/safety/*`, `/admin`)
+- [x] Frontend: default Open Graph image (`public/og-default.svg`, gradient hero)
+- [x] Frontend: structured data (JSON-LD `WebApplication` injected on every page via `Head.astro`)
+- [x] Frontend: `MarketingLayout` + stubs for `/about`, `/faq`, `/privacy`, `/terms`, `/contact`, `/disclaimer`, `/cookie-policy`
+- [ ] Frontend: Lighthouse audit ≥ 95 on every public page (run during Phase 12 launch review)
+- [ ] Frontend: hreflang for multi-language support (depends on Phase 12 localisation)
 
 ## Phase 11 — Admin
 
