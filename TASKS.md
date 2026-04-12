@@ -67,16 +67,18 @@
 
 ## Faza 3 — Otvaranje poziva (primalac)
 
-- [ ] Frontend: `/i/[slug]` javna stranica (bez logina)
-- [ ] Frontend: prikaz svih detalja + prognoza + "Otvori u mapi" dugme
-- [ ] Frontend: "Prihvatam" dugme → auth flow → status update
-- [ ] Frontend: "Mogu, ali hajde da promijenimo" → auth flow → counter-proposal wizard
-- [ ] Frontend: "Odbij" → opcioni komentar (80 char) → status update (bez logina)
-- [ ] Backend: `AcceptInvitationCommand` (zahtjeva auth)
-- [ ] Backend: `CounterProposeInvitationCommand` (zahtjeva auth, max 3 runde)
-- [ ] Backend: `DeclineInvitationCommand` (anonimno + opcioni komentar)
-- [ ] Backend: IP-based rate limiter za decline (20/dan, 5 aktivnih po browseru)
-- [ ] Backend: `RecordViewCommand` (bilježi `VIEWED` stanje)
+- [x] Frontend: `/i/[slug]` javna stranica (bez logina)
+- [x] Frontend: prikaz svih detalja + "Otvori u mapi" dugme (prognoza: Faza 4)
+- [x] Frontend: "Prihvatam" dugme → auth flow → status update (`?next=` podržan u login-u)
+- [x] Frontend: "Mogu, ali hajde da promijenimo" → auth flow → inline counter-proposal forma
+- [x] Frontend: "Odbij" → opcioni komentar (80 char) → status update (bez logina)
+- [x] Backend: `AcceptInvitationCommand` (zahtjeva auth)
+- [x] Backend: `CounterProposeInvitationCommand` (zahtjeva auth, max 3 runde, auto-close na 3.)
+- [x] Backend: `DeclineInvitationCommand` (anonimno + opcioni komentar ≤80)
+- [x] Backend: IP-based rate limiter za decline (20/dan, `DeclineRecord` entitet, 429 status)
+- [x] Backend: `RecordView` u `GetInvitationBySlugQuery` (Pending → Viewed)
+- [ ] Backend: "5 aktivnih poziva po browseru" rate limit (vraća se kad bude Faza 13 admin/abuse)
+- [ ] Backend: Initiator-side odgovor na counter (treba Faza 6 dashboard)
 
 ## Faza 4 — Vremenska prognoza
 

@@ -7,6 +7,9 @@ public class Invitation : Entity
     // Spec §3 korak 5: unopened link expires after 72h.
     private static readonly TimeSpan UnopenedTtl = TimeSpan.FromHours(72);
 
+    // Spec §4 Opcija 2: at most 3 counter-proposal rounds total.
+    public const int MaxCounterRounds = 3;
+
     public Guid Id { get; private set; }
     public Guid InitiatorId { get; private set; }
     public string Slug { get; private set; } = null!;
@@ -14,7 +17,6 @@ public class Invitation : Entity
     public InvitationVibe Vibe { get; private set; }
     public string? CustomVibe { get; private set; }
 
-    // Place is persisted as owned columns via EF — see DbContext.
     public Place Place { get; private set; } = null!;
 
     public DateTime MeetingAt { get; private set; }
@@ -27,14 +29,11 @@ public class Invitation : Entity
     public DateTime CreatedAt { get; private set; }
     public DateTime ExpiresAt { get; private set; }
     public DateTime? FirstViewedAt { get; private set; }
+    public DateTime? RespondedAt { get; private set; }
+    public string? DeclineReason { get; private set; }
 
     private Invitation() { }
 
-    /// <summary>
-    /// Creates an already-published invitation ready to be shared.
-    /// MVP for Faza 2 — the wizard posts once and the recipient gets a live link.
-    /// A draft-only state will be introduced later if we add autosave.
-    /// </summary>
     public static Invitation CreateAndPublish(
         Guid initiatorId,
         string slug,
@@ -76,6 +75,51 @@ public class Invitation : Entity
         }
         FirstViewedAt ??= nowUtc;
     }
+
+    /// <summary>Spec §4 Opcija 1: recipient accepts the invitation (auth required upstream).</summary>
+    public void Accept()
+    {
+        CheckRule(new CanBeRespondedTo(Status));
+        Status = InvitationStatus.Accepted;
+        RespondedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Spec §4 Opcija 3: recipient declines (anonymous allowed). Comment is optional (≤80 chars).</summary>
+    public void Decline(string? reason)
+    {
+        CheckRule(new CanBeRespondedTo(Status));
+        CheckRule(new DeclineReasonWithinLimit(reason));
+        Status = InvitationStatus.Declined;
+        DeclineReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        RespondedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Spec §4 Opcija 2: recipient sends a counter-proposal for time, place, or both.
+    /// Increments the round and flips status to Countered. Rejects when 3 rounds are already spent.
+    /// </summary>
+    public CounterProposal CounterPropose(Guid proposerId, DateTime? newMeetingAtUtc, Place? newPlace)
+    {
+        CheckRule(new CanBeRespondedTo(Status));
+        CheckRule(new CounterRoundsNotExhausted(CounterRound));
+
+        var nextRound = CounterRound + 1;
+        var counter = CounterProposal.Create(Id, nextRound, proposerId, newMeetingAtUtc, newPlace);
+
+        CounterRound = nextRound;
+        Status = InvitationStatus.Countered;
+        RespondedAt = DateTime.UtcNow;
+
+        // Auto-close when the max round count is reached — spec §4 Opcija 2 "nakon 3 runde
+        // automatski se zatvara ako nema dogovora". This is a conservative reading: the
+        // third counter is the last allowed action and the invitation expires right after.
+        if (CounterRound >= MaxCounterRounds)
+        {
+            Status = InvitationStatus.Expired;
+        }
+
+        return counter;
+    }
 }
 
 internal sealed class MeetingMustBeInTheFuture : IBusinessRule
@@ -106,4 +150,29 @@ internal sealed class CustomVibeRequiredWhenVibeIsCustom : IBusinessRule
     }
     public bool IsBroken() => _vibe == InvitationVibe.Custom && string.IsNullOrWhiteSpace(_customVibe);
     public string Message => "Custom vibe requires a label.";
+}
+
+internal sealed class CanBeRespondedTo : IBusinessRule
+{
+    private readonly InvitationStatus _status;
+    public CanBeRespondedTo(InvitationStatus status) => _status = status;
+    public bool IsBroken() => _status is not (InvitationStatus.Pending or InvitationStatus.Viewed or InvitationStatus.Countered);
+    public string Message => "This invitation is no longer open for a response.";
+}
+
+internal sealed class DeclineReasonWithinLimit : IBusinessRule
+{
+    private const int Max = 80;
+    private readonly string? _reason;
+    public DeclineReasonWithinLimit(string? reason) => _reason = reason;
+    public bool IsBroken() => (_reason?.Length ?? 0) > Max;
+    public string Message => $"Decline reason must be at most {Max} characters.";
+}
+
+internal sealed class CounterRoundsNotExhausted : IBusinessRule
+{
+    private readonly int _round;
+    public CounterRoundsNotExhausted(int round) => _round = round;
+    public bool IsBroken() => _round >= Invitation.MaxCounterRounds;
+    public string Message => $"Counter-proposal rounds exhausted (max {Invitation.MaxCounterRounds}).";
 }

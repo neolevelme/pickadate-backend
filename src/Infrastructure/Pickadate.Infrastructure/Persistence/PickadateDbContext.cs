@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
 using Pickadate.Domain.Users;
@@ -9,7 +10,9 @@ public class PickadateDbContext : DbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<CounterProposal> CounterProposals => Set<CounterProposal>();
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
+    public DbSet<DeclineRecord> DeclineRecords => Set<DeclineRecord>();
 
     public PickadateDbContext(DbContextOptions<PickadateDbContext> options) : base(options) { }
 
@@ -39,9 +42,9 @@ public class PickadateDbContext : DbContext
             b.Property(i => i.Status).HasConversion<int>();
             b.Property(i => i.Message).HasMaxLength(140);
             b.Property(i => i.MediaUrl).HasMaxLength(512);
+            b.Property(i => i.DeclineReason).HasMaxLength(80);
             b.HasIndex(i => i.InitiatorId);
 
-            // Place is a value object stored as owned columns on the same row.
             b.OwnsOne(i => i.Place, p =>
             {
                 p.Property(x => x.GooglePlaceId).HasColumnName("place_google_id").HasMaxLength(256);
@@ -54,6 +57,25 @@ public class PickadateDbContext : DbContext
             b.Ignore(i => i.DomainEvents);
         });
 
+        modelBuilder.Entity<CounterProposal>(b =>
+        {
+            b.ToTable("counter_proposals");
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Kind).HasConversion<int>();
+            b.HasIndex(c => new { c.InvitationId, c.Round });
+
+            b.OwnsOne(c => c.NewPlace, p =>
+            {
+                p.Property(x => x.GooglePlaceId).HasColumnName("new_place_google_id").HasMaxLength(256);
+                p.Property(x => x.Name).HasColumnName("new_place_name").HasMaxLength(256);
+                p.Property(x => x.FormattedAddress).HasColumnName("new_place_formatted_address").HasMaxLength(512);
+                p.Property(x => x.Lat).HasColumnName("new_place_lat");
+                p.Property(x => x.Lng).HasColumnName("new_place_lng");
+            });
+
+            b.Ignore(c => c.DomainEvents);
+        });
+
         modelBuilder.Entity<VerificationCode>(b =>
         {
             b.ToTable("verification_codes");
@@ -62,6 +84,14 @@ public class PickadateDbContext : DbContext
             b.Property(v => v.Code).IsRequired().HasMaxLength(6);
             b.HasIndex(v => new { v.Email, v.ExpiresAt });
             b.Ignore(v => v.DomainEvents);
+        });
+
+        modelBuilder.Entity<DeclineRecord>(b =>
+        {
+            b.ToTable("decline_records");
+            b.HasKey(d => d.Id);
+            b.Property(d => d.Ip).IsRequired().HasMaxLength(64);
+            b.HasIndex(d => new { d.Ip, d.CreatedAt });
         });
     }
 }

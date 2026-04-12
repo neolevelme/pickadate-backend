@@ -7,6 +7,13 @@ public record PlaceDto(
     double Lat,
     double Lng);
 
+public record CounterProposalDto(
+    int Round,
+    string Kind,
+    DateTime? NewMeetingAt,
+    PlaceDto? NewPlace,
+    DateTime CreatedAt);
+
 public record InvitationDetailDto(
     string Slug,
     string Vibe,
@@ -16,8 +23,11 @@ public record InvitationDetailDto(
     string? Message,
     string? MediaUrl,
     string Status,
+    int CounterRound,
+    int MaxCounterRounds,
     DateTime CreatedAt,
     DateTime ExpiresAt,
-    string InitiatorName);
+    string InitiatorName,
+    CounterProposalDto? LatestCounter);
 
 public record CreateInvitationResult(string Slug);

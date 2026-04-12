@@ -2,6 +2,22 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-12 — Faza 3: accept / counter / decline
+
+### Added
+- `Invitation.Accept()`, `Invitation.Decline(reason)`, `Invitation.CounterPropose(proposerId, newMeetingAtUtc, newPlace)` domain methods guarded by `CanBeRespondedTo`, `DeclineReasonWithinLimit` (≤80), and `CounterRoundsNotExhausted` (max 3) business rules
+- Counter round `MaxCounterRounds = 3` constant on `Invitation`; the third counter auto-closes the invitation (`Status=Expired`)
+- `Invitation.RespondedAt` and `Invitation.DeclineReason` columns
+- `CounterProposal` entity + owned `NewPlace` columns + `ICounterProposalRepository` + `CounterProposalRepository`
+- `DeclineRecord` entity (IP + timestamp, 24h retention per spec §12) + `IDeclineRecordRepository` + `DeclineRecordRepository`
+- `IClientContext` / `ClientContext` — best-effort client IP, honours `X-Forwarded-For` (leftmost) and falls back to the socket address
+- `AcceptInvitationCommand`, `DeclineInvitationCommand`, `CounterProposeInvitationCommand` + validators
+- `DeclineInvitationCommandHandler` enforces 20 declines / 24h / IP via `DeclineRecord` count, and throws `TooManyDeclinesException` → 429
+- `InvitationsController` endpoints: `POST /api/invitations/{slug}/accept` (auth), `POST /{slug}/counter` (auth), `POST /{slug}/decline` (anonymous)
+- `InvitationDetailDto` now includes `CounterRound`, `MaxCounterRounds`, and `LatestCounter` (a `CounterProposalDto`) so the frontend can render the current state correctly
+- `ExceptionHandlingMiddleware` maps `InvitationNotFoundException` → 404 and `TooManyDeclinesException` → 429
+- EF migration `InvitationActions` — `counter_proposals` table (with owned `new_place_*` columns), `decline_records` table, plus `decline_reason` / `responded_at` columns on `invitations`
+
 ## 2026-04-12 — Faza 2: invitation create + public view
 
 ### Added
