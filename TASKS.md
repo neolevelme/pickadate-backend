@@ -48,20 +48,22 @@
 
 ## Faza 2 — Kreiranje poziva (5-step wizard)
 
-- [ ] Backend: `Invitation` agregat (draft → pending → viewed → ...)
-- [ ] Backend: `Place` value object (googlePlaceId, lat, lng, formattedAddress, name)
-- [ ] Backend: `CreateInvitationCommand` + handler + validator
-- [ ] Backend: `PublishInvitationCommand` (generiše 6-char slug, expiresAt = +72h)
-- [ ] Backend: `GET /api/invitations/{slug}` (javni endpoint, lazy auth)
-- [ ] Backend: EF migracija `002_Invitations`
-- [ ] Frontend: `/create` wizard stranica sa 5 koraka:
-  - [ ] Korak 1 — Vibe (Kafa / Piće / Šetnja / Aktivnost / Večera / Custom)
-  - [ ] Korak 2 — Mjesto (Google Places autocomplete + map pin)
-  - [ ] Korak 3 — Vrijeme (date + time picker)
-  - [ ] Korak 4 — Poruka (textarea + emoji + Giphy picker)
-  - [ ] Korak 5 — Pregled sa prognozom i "Pošalji" dugmetom
-- [ ] Frontend: Google Maps JS SDK integracija
-- [ ] Frontend: Giphy API integracija
+- [x] Backend: `Invitation` agregat (pending → viewed; accept/counter/decline u Fazi 3)
+- [x] Backend: `Place` value object (googlePlaceId, lat, lng, formattedAddress, name)
+- [x] Backend: `CreateInvitationCommand` + handler + validator
+- [x] Backend: `CreateAndPublish` u agregatu (generiše `xx-yyyy` slug, expiresAt = +72h)
+- [x] Backend: `GET /api/invitations/{slug}` (javni endpoint, lazy auth) + `RecordView`
+- [x] Backend: EF migracija `002_Invitations` (owned Place columns)
+- [x] Frontend: `/create` wizard stranica sa 5 koraka:
+  - [x] Korak 1 — Vibe (Kafa / Piće / Šetnja / Aktivnost / Večera / Custom)
+  - [x] Korak 2 — Mjesto (manualni inputi — Google Places je Faza 2.5)
+  - [x] Korak 3 — Vrijeme (date + time picker)
+  - [x] Korak 4 — Poruka (textarea + URL za media — Giphy picker je Faza 2.5)
+  - [x] Korak 5 — Pregled sa "Pošalji" dugmetom
+- [x] Frontend: javna `/i/[slug]` stranica (detalji + Google Maps link, accept/counter/decline su Faza 3)
+- [ ] Frontend: Google Maps JS SDK integracija (Faza 2.5)
+- [ ] Frontend: Giphy API integracija (Faza 2.5)
+- [ ] Backend: weather integracija u pregledu (Faza 4)
 
 ## Faza 3 — Otvaranje poziva (primalac)
 

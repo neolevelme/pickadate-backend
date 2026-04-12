@@ -10,6 +10,7 @@ using Pickadate.Application.Behaviors;
 using Pickadate.Application.Contracts;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Auth;
+using Pickadate.Domain.Invitations;
 using Pickadate.Domain.Users;
 using Pickadate.Infrastructure;
 using Pickadate.Infrastructure.Persistence;
@@ -47,12 +48,15 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailO
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 
 // Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
+builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
 
 builder.Services.AddHttpContextAccessor();
 

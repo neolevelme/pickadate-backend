@@ -34,12 +34,23 @@ public class PickadateDbContext : DbContext
             b.HasKey(i => i.Id);
             b.Property(i => i.Slug).IsRequired().HasMaxLength(16);
             b.HasIndex(i => i.Slug).IsUnique();
+            b.Property(i => i.Vibe).HasConversion<int>();
             b.Property(i => i.CustomVibe).HasMaxLength(64);
-            b.Property(i => i.PlaceName).IsRequired().HasMaxLength(256);
-            b.Property(i => i.PlaceGoogleId).IsRequired().HasMaxLength(256);
-            b.Property(i => i.PlaceFormattedAddress).IsRequired().HasMaxLength(512);
+            b.Property(i => i.Status).HasConversion<int>();
             b.Property(i => i.Message).HasMaxLength(140);
             b.Property(i => i.MediaUrl).HasMaxLength(512);
+            b.HasIndex(i => i.InitiatorId);
+
+            // Place is a value object stored as owned columns on the same row.
+            b.OwnsOne(i => i.Place, p =>
+            {
+                p.Property(x => x.GooglePlaceId).HasColumnName("place_google_id").HasMaxLength(256);
+                p.Property(x => x.Name).HasColumnName("place_name").IsRequired().HasMaxLength(256);
+                p.Property(x => x.FormattedAddress).HasColumnName("place_formatted_address").IsRequired().HasMaxLength(512);
+                p.Property(x => x.Lat).HasColumnName("place_lat");
+                p.Property(x => x.Lng).HasColumnName("place_lng");
+            });
+
             b.Ignore(i => i.DomainEvents);
         });
 
