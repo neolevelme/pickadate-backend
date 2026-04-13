@@ -26,17 +26,20 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
     private readonly IInvitationRepository _invitations;
     private readonly IDeclineRecordRepository _declines;
     private readonly IClientContext _client;
+    private readonly INotificationService _notifications;
     private readonly IUnitOfWork _uow;
 
     public DeclineInvitationCommandHandler(
         IInvitationRepository invitations,
         IDeclineRecordRepository declines,
         IClientContext client,
+        INotificationService notifications,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _declines = declines;
         _client = client;
+        _notifications = notifications;
         _uow = uow;
     }
 
@@ -57,6 +60,18 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
 
         await _declines.AddAsync(DeclineRecord.Create(ip), ct);
         await _uow.CommitAsync(ct);
+
+        // Spec §4 Option 3 — deliberately calm tone, no comment echoed
+        // in the push itself (the initiator sees the note when they open
+        // the invitation).
+        await _notifications.NotifyUserAsync(
+            invitation.InitiatorId,
+            new NotificationPayload(
+                Title: "Your invitation wasn't accepted",
+                Body: "No worries — tap for details.",
+                Url: "/dashboard",
+                Tag: $"invitation-declined-{invitation.Slug}"),
+            ct);
     }
 }
 

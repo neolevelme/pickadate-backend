@@ -66,6 +66,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IClientContext, ClientContext>();
+builder.Services.AddScoped<Pickadate.Application.Users.Commands.IDeleteMyAccountService, DeleteMyAccountService>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
 builder.Services.AddSingleton<ISafetyTokenGenerator, SafetyTokenGenerator>();

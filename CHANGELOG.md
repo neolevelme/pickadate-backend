@@ -2,6 +2,20 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-13 — Phase 12: delete-my-account + notification follow-up
+
+### Added
+- `DeleteMyAccountCommand` + `IDeleteMyAccountService` contract in Application, `DeleteMyAccountService` impl in Infrastructure. One call sweeps every row tied to the caller: invitations they initiated (plus their counter-proposals), safety checks, push subscriptions, anniversaries involving them, verification codes for their email, and the user row itself. Invitations where they were the recipient are anonymised (`RecipientId → null`) so the other party's history survives.
+- `DELETE /api/users/me` endpoint (auth required, returns 204). Spec §12 GDPR right-to-erasure.
+- `AcceptInvitationCommandHandler` already notified on Phase 5; this turn adds the rest:
+  - `DeclineInvitationCommandHandler` notifies the initiator with a deliberately calm "Your invitation wasn't accepted" payload. The optional reason is kept out of the push itself (spec §4 Option 3) — the initiator sees it when they open the invitation.
+  - `CounterProposeInvitationCommandHandler` notifies whichever side didn't just act (recipient counters initiator, or initiator counter-counters recipient) with a "They suggested a change — round X/Y" payload.
+  - `GetInvitationBySlugQueryHandler` fires a "Your invitation was opened" notification exactly once on the `Pending → Viewed` transition — refreshes don't spam.
+
+### Notes
+- No new migration — `DeleteMyAccountService` uses `ExecuteDelete`/`ExecuteUpdate` against the existing schema.
+
+
 ## 2026-04-13 — Phase 5: web push notifications
 
 ### Added

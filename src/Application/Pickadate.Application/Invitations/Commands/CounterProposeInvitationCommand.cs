@@ -53,17 +53,20 @@ public class CounterProposeInvitationCommandHandler : IRequestHandler<CounterPro
     private readonly IInvitationRepository _invitations;
     private readonly ICounterProposalRepository _counterProposals;
     private readonly ICurrentUser _currentUser;
+    private readonly INotificationService _notifications;
     private readonly IUnitOfWork _uow;
 
     public CounterProposeInvitationCommandHandler(
         IInvitationRepository invitations,
         ICounterProposalRepository counterProposals,
         ICurrentUser currentUser,
+        INotificationService notifications,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _counterProposals = counterProposals;
         _currentUser = currentUser;
+        _notifications = notifications;
         _uow = uow;
     }
 
@@ -88,5 +91,25 @@ public class CounterProposeInvitationCommandHandler : IRequestHandler<CounterPro
         var counter = invitation.CounterPropose(userId, request.NewMeetingAtUtc, newPlace);
         await _counterProposals.AddAsync(counter, ct);
         await _uow.CommitAsync(ct);
+
+        // Notify the other party. The counter can go either way: the
+        // recipient counters the initiator's proposal, or the initiator
+        // counter-counters the recipient's one. Target whichever side
+        // didn't just act.
+        var otherSideId = userId == invitation.InitiatorId
+            ? invitation.RecipientId
+            : invitation.InitiatorId;
+
+        if (otherSideId is Guid target)
+        {
+            await _notifications.NotifyUserAsync(
+                target,
+                new NotificationPayload(
+                    Title: "They suggested a change",
+                    Body: $"Round {invitation.CounterRound}/{Invitation.MaxCounterRounds} — tap to review.",
+                    Url: "/dashboard",
+                    Tag: $"invitation-countered-{invitation.Slug}"),
+                ct);
+        }
     }
 }

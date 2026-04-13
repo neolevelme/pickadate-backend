@@ -153,8 +153,11 @@
 
 ## Phase 12 — Launch
 
-- [ ] Privacy policy, Terms, Cookie policy, Disclaimer pages
-- [ ] GDPR cookie banner
-- [ ] "Delete my account" flow
+- [x] Privacy policy, Terms, Cookie policy, Disclaimer pages (draft stubs shipped in Phase 10; final legal copy requires a lawyer)
+- [x] GDPR cookie banner (mounted in `BaseLayout`, dismissable, consent persisted to `localStorage`)
+- [x] "Delete my account" flow (backend `DELETE /api/users/me` wipes every owned row + anonymises recipient participation; frontend danger-zone section with typed-phrase confirmation)
+- [x] Wire `Counter` / `Decline` / first-view notifications (Phase 5 follow-up)
+- [ ] Final legal copy (lawyer review)
+- [ ] Lighthouse audit ≥ 95 on every public page
 - [ ] Load test (k6 or Artillery)
 - [ ] Deploy to production

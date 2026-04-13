@@ -35,4 +35,13 @@ public class UsersController : ControllerBase
         await _mediator.Send(new UpdateAnniversaryPreferenceCommand(body.Enabled), ct);
         return NoContent();
     }
+
+    /// <summary>Spec §12 GDPR "delete my account" — wipes everything tied to the caller.</summary>
+    [Authorize]
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteMyAccount(CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteMyAccountCommand(), ct);
+        return NoContent();
+    }
 }

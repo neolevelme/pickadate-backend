@@ -15,6 +15,7 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
     private readonly ICounterProposalRepository _counterProposals;
     private readonly IUserRepository _users;
     private readonly IWeatherService _weather;
+    private readonly INotificationService _notifications;
     private readonly IUnitOfWork _uow;
 
     public GetInvitationBySlugQueryHandler(
@@ -22,12 +23,14 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
         ICounterProposalRepository counterProposals,
         IUserRepository users,
         IWeatherService weather,
+        INotificationService notifications,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _counterProposals = counterProposals;
         _users = users;
         _weather = weather;
+        _notifications = notifications;
         _uow = uow;
     }
 
@@ -38,7 +41,22 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
 
         var wasPending = invitation.Status == InvitationStatus.Pending;
         invitation.RecordView(DateTime.UtcNow);
-        if (wasPending) await _uow.CommitAsync(ct);
+        if (wasPending)
+        {
+            await _uow.CommitAsync(ct);
+
+            // Spec §9: the initiator wants to know the moment their link is
+            // first opened. Fires only on the Pending → Viewed transition so
+            // refreshes don't spam.
+            await _notifications.NotifyUserAsync(
+                invitation.InitiatorId,
+                new NotificationPayload(
+                    Title: "Your invitation was opened",
+                    Body: "They've seen it — fingers crossed.",
+                    Url: "/dashboard",
+                    Tag: $"invitation-viewed-{invitation.Slug}"),
+                ct);
+        }
 
         var initiator = await _users.GetByIdAsync(invitation.InitiatorId, ct);
 
