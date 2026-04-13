@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
+using Pickadate.Domain.Safety;
 using Pickadate.Domain.Users;
 
 namespace Pickadate.Infrastructure.Persistence;
@@ -13,6 +14,7 @@ public class PickadateDbContext : DbContext
     public DbSet<CounterProposal> CounterProposals => Set<CounterProposal>();
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
     public DbSet<DeclineRecord> DeclineRecords => Set<DeclineRecord>();
+    public DbSet<SafetyCheck> SafetyChecks => Set<SafetyCheck>();
 
     public PickadateDbContext(DbContextOptions<PickadateDbContext> options) : base(options) { }
 
@@ -92,6 +94,17 @@ public class PickadateDbContext : DbContext
             b.HasKey(d => d.Id);
             b.Property(d => d.Ip).IsRequired().HasMaxLength(64);
             b.HasIndex(d => new { d.Ip, d.CreatedAt });
+        });
+
+        modelBuilder.Entity<SafetyCheck>(b =>
+        {
+            b.ToTable("safety_checks");
+            b.HasKey(s => s.Id);
+            b.Property(s => s.FriendToken).IsRequired().HasMaxLength(64);
+            b.HasIndex(s => s.FriendToken).IsUnique();
+            b.HasIndex(s => new { s.InvitationId, s.UserId });
+            b.HasIndex(s => s.ScheduledCheckInAt);
+            b.Ignore(s => s.DomainEvents);
         });
     }
 }

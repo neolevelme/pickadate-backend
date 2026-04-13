@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentValidation;
 using Pickadate.Application.Auth.Commands;
 using Pickadate.Application.Invitations.Commands;
+using Pickadate.Application.Safety.Commands;
 using Pickadate.BuildingBlocks.Domain;
 
 namespace Pickadate.API.Middleware;
@@ -46,6 +47,10 @@ public class ExceptionHandlingMiddleware
         catch (TooManyDeclinesException ex)
         {
             await WriteProblem(context, StatusCodes.Status429TooManyRequests, "Too many requests", ex.Message);
+        }
+        catch (InvalidSafetyCheckStateException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status422UnprocessableEntity, "Invalid state", ex.Message);
         }
         catch (Exception ex)
         {

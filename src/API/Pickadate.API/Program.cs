@@ -12,6 +12,7 @@ using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
+using Pickadate.Domain.Safety;
 using Pickadate.Domain.Users;
 using Pickadate.Infrastructure;
 using Pickadate.Infrastructure.Persistence;
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeReposito
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<ICounterProposalRepository, CounterProposalRepository>();
 builder.Services.AddScoped<IDeclineRecordRepository, DeclineRecordRepository>();
+builder.Services.AddScoped<ISafetyCheckRepository, SafetyCheckRepository>();
 
 // Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -61,6 +63,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IClientContext, ClientContext>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
+builder.Services.AddSingleton<ISafetyTokenGenerator, SafetyTokenGenerator>();
 
 // Weather forecast (Open-Meteo) — typed HttpClient with a 6h in-memory cache
 // baked into the service itself.
@@ -71,6 +74,7 @@ builder.Services.AddHttpClient<IWeatherService, OpenMeteoWeatherService>(c =>
 
 // Background jobs
 builder.Services.AddHostedService<InvitationPurgeHostedService>();
+builder.Services.AddHostedService<SafetyCheckAlertHostedService>();
 
 builder.Services.AddHttpContextAccessor();
 

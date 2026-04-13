@@ -109,10 +109,15 @@
 
 ## Phase 7 — Safety check
 
-- [ ] Backend: `SafetyCheck` entity + `CreateSafetyCheckCommand`
-- [ ] Backend: hosted service that fires the alert when check-in is missed
-- [ ] Frontend: safety check wizard on the confirmation screen
-- [ ] Frontend: `/safety/[token]` public route for the friend
+- [x] Backend: `SafetyCheck` aggregate (invitationId, userId, friendToken, scheduledCheckInAt, confirmedAt, alertedAt)
+- [x] Backend: `CreateSafetyCheckCommand` (auth, requires invitation to be Accepted, idempotent per invitation+user)
+- [x] Backend: `ConfirmSafetyCheckCommand` ("all good" — idempotent)
+- [x] Backend: `GetFriendSafetyViewQuery` (anonymous, returns meeting details + status for the bearer token)
+- [x] Backend: `SafetyCheckAlertHostedService` (5-minute cron) — marks due checks as alerted and logs where the Phase 5 push would fire
+- [x] Backend: `ISafetyTokenGenerator` (24-byte base64url), EF migration `SafetyChecks`
+- [x] Frontend: `SafetyCheckPanel` on `InvitationView` when `Accepted`
+- [x] Frontend: `/safety/[token]` public SSR page (`noindex`) showing meeting details and status
+- [ ] Real push alert delivery — depends on Phase 5 Web Push infrastructure
 
 ## Phase 8 — QR code
 
@@ -134,11 +139,6 @@
 - [x] Frontend: `MarketingLayout` + stubs for `/about`, `/faq`, `/privacy`, `/terms`, `/contact`, `/disclaimer`, `/cookie-policy`
 - [ ] Frontend: Lighthouse audit ≥ 95 on every public page (run during Phase 12 launch review)
 - [ ] Frontend: hreflang for multi-language support (depends on Phase 12 localisation)
-
-## Phase 11 — Admin
-
-- [ ] Backend: admin endpoints (`/api/admin/users`, `/api/admin/flags`)
-- [ ] Frontend: simple `/admin` page
 
 ## Phase 12 — Launch
 
