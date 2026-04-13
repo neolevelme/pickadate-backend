@@ -13,6 +13,7 @@ using Pickadate.Domain.Anniversaries;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
+using Pickadate.Domain.Notifications;
 using Pickadate.Domain.Safety;
 using Pickadate.Domain.Users;
 using Pickadate.Infrastructure;
@@ -47,6 +48,7 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 // Options
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.Configure<PushOptions>(builder.Configuration.GetSection(PushOptions.SectionName));
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -56,6 +58,7 @@ builder.Services.AddScoped<ICounterProposalRepository, CounterProposalRepository
 builder.Services.AddScoped<IDeclineRecordRepository, DeclineRecordRepository>();
 builder.Services.AddScoped<ISafetyCheckRepository, SafetyCheckRepository>();
 builder.Services.AddScoped<IAnniversaryRepository, AnniversaryRepository>();
+builder.Services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
 
 // Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -74,10 +77,25 @@ builder.Services.AddHttpClient<IWeatherService, OpenMeteoWeatherService>(c =>
     c.Timeout = TimeSpan.FromSeconds(5);
 });
 
+// Notifications — swap real Web Push delivery in when VAPID keys are
+// configured; otherwise log to the console so the rest of the pipeline
+// still fires during local dev without any secrets to manage.
+var pushSection = builder.Configuration.GetSection(PushOptions.SectionName);
+var hasVapid = !string.IsNullOrWhiteSpace(pushSection["PublicKey"]) && !string.IsNullOrWhiteSpace(pushSection["PrivateKey"]);
+if (hasVapid)
+{
+    builder.Services.AddScoped<INotificationService, WebPushNotificationService>();
+}
+else
+{
+    builder.Services.AddScoped<INotificationService, LoggingNotificationService>();
+}
+
 // Background jobs
 builder.Services.AddHostedService<InvitationPurgeHostedService>();
 builder.Services.AddHostedService<SafetyCheckAlertHostedService>();
 builder.Services.AddHostedService<AnniversaryDetectionHostedService>();
+builder.Services.AddHostedService<InvitationReminderHostedService>();
 
 builder.Services.AddHttpContextAccessor();
 

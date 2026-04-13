@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Pickadate.Application.Contracts;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Safety;
 
@@ -8,10 +9,11 @@ namespace Pickadate.Infrastructure.Services;
 
 /// <summary>
 /// Spec §7: once a safety check's scheduled check-in time passes without
-/// the user pressing "all good", the friend should be notified. Real push
-/// delivery is a Phase 5 concern — for now this service finds due checks,
-/// logs a warning that an alert would fire, and marks them as alerted so
-/// we don't log them again.
+/// the user pressing "all good", the system should alert the friend. We
+/// don't store friend contact details (anonymous bearer link only), so
+/// instead we ping the user themselves with a nudge to confirm — the
+/// friend still sees the "Overdue" state on the public /safety/:token
+/// page when they refresh.
 /// </summary>
 public class SafetyCheckAlertHostedService : BackgroundService
 {
@@ -46,6 +48,7 @@ public class SafetyCheckAlertHostedService : BackgroundService
         using var scope = _services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ISafetyCheckRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var notifications = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         var now = DateTime.UtcNow;
         var due = await repo.GetDueForAlertAsync(now, ct);
@@ -53,9 +56,15 @@ public class SafetyCheckAlertHostedService : BackgroundService
 
         foreach (var check in due)
         {
-            _logger.LogWarning(
-                "Safety check {Id} overdue (scheduled for {Scheduled:u}, user {User}, invitation {Invitation}) — friend alert would fire here once Phase 5 notifications land",
-                check.Id, check.ScheduledCheckInAt, check.UserId, check.InvitationId);
+            await notifications.NotifyUserAsync(
+                check.UserId,
+                new NotificationPayload(
+                    Title: "Are you okay? 💛",
+                    Body: "Your pickadate.me safety check is overdue. Tap to confirm you're safe.",
+                    Url: "/dashboard",
+                    Tag: $"safety-overdue-{check.Id}"),
+                ct);
+
             check.MarkAlerted();
         }
 

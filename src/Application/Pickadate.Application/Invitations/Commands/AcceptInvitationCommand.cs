@@ -11,15 +11,18 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 {
     private readonly IInvitationRepository _invitations;
     private readonly ICurrentUser _currentUser;
+    private readonly INotificationService _notifications;
     private readonly IUnitOfWork _uow;
 
     public AcceptInvitationCommandHandler(
         IInvitationRepository invitations,
         ICurrentUser currentUser,
+        INotificationService notifications,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _currentUser = currentUser;
+        _notifications = notifications;
         _uow = uow;
     }
 
@@ -35,6 +38,18 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         invitation.Accept(userId);
         await _uow.CommitAsync(ct);
+
+        // Fire-and-persist after commit so a flaky push transport never blocks
+        // the accept itself. Spec §9: the initiator wants to see "accepted"
+        // land in their notification tray immediately.
+        await _notifications.NotifyUserAsync(
+            invitation.InitiatorId,
+            new NotificationPayload(
+                Title: "Your invitation was accepted ✨",
+                Body: $"{invitation.Place.Name} — see you there.",
+                Url: $"/dashboard",
+                Tag: $"invitation-accepted-{invitation.Slug}"),
+            ct);
     }
 }
 

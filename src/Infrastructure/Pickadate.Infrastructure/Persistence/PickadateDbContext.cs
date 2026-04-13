@@ -3,6 +3,7 @@ using Pickadate.Domain.Anniversaries;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
+using Pickadate.Domain.Notifications;
 using Pickadate.Domain.Safety;
 using Pickadate.Domain.Users;
 
@@ -17,6 +18,7 @@ public class PickadateDbContext : DbContext
     public DbSet<DeclineRecord> DeclineRecords => Set<DeclineRecord>();
     public DbSet<SafetyCheck> SafetyChecks => Set<SafetyCheck>();
     public DbSet<Anniversary> Anniversaries => Set<Anniversary>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     public PickadateDbContext(DbContextOptions<PickadateDbContext> options) : base(options) { }
 
@@ -117,5 +119,23 @@ public class PickadateDbContext : DbContext
             b.HasIndex(a => new { a.UserAId, a.UserBId }).IsUnique();
             b.Ignore(a => a.DomainEvents);
         });
+
+        modelBuilder.Entity<PushSubscription>(b =>
+        {
+            b.ToTable("push_subscriptions");
+            b.HasKey(p => p.Id);
+            b.Property(p => p.Endpoint).IsRequired().HasMaxLength(2048);
+            b.HasIndex(p => p.Endpoint).IsUnique();
+            b.Property(p => p.P256dh).IsRequired().HasMaxLength(256);
+            b.Property(p => p.Auth).IsRequired().HasMaxLength(256);
+            b.HasIndex(p => p.UserId);
+            b.Ignore(p => p.DomainEvents);
+        });
+
+        // Reminder idempotency columns on invitations (added in Phase 5).
+        modelBuilder.Entity<Invitation>()
+            .Property<DateTime?>("Reminder24hSentAt");
+        modelBuilder.Entity<Invitation>()
+            .Property<DateTime?>("Reminder2hSentAt");
     }
 }

@@ -2,6 +2,27 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-13 — Phase 5: web push notifications
+
+### Added
+- `WebPush` NuGet package (1.0.12) for VAPID-signed Web Push delivery.
+- `PushSubscription` aggregate under `Pickadate.Domain.Notifications` — `Endpoint` (unique), `P256dh`, `Auth`, `UserId`. `IPushSubscriptionRepository` with lookups by endpoint, for a single user, and bulk for a set of user ids.
+- `INotificationService` contract in Application with a `NotificationPayload` record (title, body, url, tag).
+- Two infrastructure implementations:
+  - `LoggingNotificationService` — dev fallback that logs where a real push would go. Keeps the rest of the notification pipeline firing without any secrets.
+  - `WebPushNotificationService` — real VAPID delivery. Stale subscriptions (404 / 410 from the push service) are deleted eagerly so future sweeps don't waste cycles.
+  - `Program.cs` selects the real one when `Push:PublicKey` / `Push:PrivateKey` are both set, otherwise falls back to logging.
+- `PushOptions` (`Push` config section) — public key, private key, subject.
+- `SubscribeToPushCommand` / `UnsubscribeFromPushCommand` — auth-required, upsert-by-endpoint semantics so a re-subscribe from the same browser never leaves dangling rows.
+- `NotificationsController` — `GET /api/notifications/vapid-public-key` (anonymous, so the browser can call `pushManager.subscribe`), `POST /subscribe`, `POST /unsubscribe`.
+- `AcceptInvitationCommandHandler` fires a notification to the initiator after the commit succeeds. The push is best-effort: a flaky transport can't block the accept itself.
+- `SafetyCheckAlertHostedService` now calls `INotificationService` instead of just logging. Friends are anonymous bearer-token holders so we can't target them directly — the overdue check notifies the *user* themselves with a nudge to confirm.
+- `AnniversaryDetectionHostedService` now calls `INotificationService` to notify both halves of the pair.
+- `InvitationReminderHostedService` — 30-minute sweep for `Accepted` invitations with `MeetingAt` in `[23h, 25h]` and `[1.5h, 2.5h]`, idempotent via shadow properties `Reminder24hSentAt` / `Reminder2hSentAt` on the invitation row. Notifies both initiator and recipient when both are known.
+- EF migration `PushAndReminders` — adds the `push_subscriptions` table and the two reminder timestamp columns on `invitations`.
+- `appsettings.json` gains an empty `Push` section so the fallback path is the default on a fresh checkout.
+
+
 ## 2026-04-13 — Phase 9: anniversary mode
 
 ### Added

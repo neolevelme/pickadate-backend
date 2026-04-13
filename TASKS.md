@@ -90,11 +90,17 @@
 
 ## Phase 5 — Notifications
 
-- [ ] Backend: Web Push (VAPID keys, `PushSubscription` entity)
-- [ ] Backend: `NotificationService` (push + email fallback)
-- [ ] Backend: hosted service for the `reminder-24h` and `reminder-2h` cron
-- [ ] Frontend: prompt for push permissions after login
-- [ ] Frontend: service worker for push
+- [x] Backend: `PushSubscription` aggregate + repository + EF mapping (unique endpoint index)
+- [x] Backend: `INotificationService` with `LoggingNotificationService` (dev fallback) and `WebPushNotificationService` (VAPID via `WebPush` 1.0.12 NuGet package). `Program.cs` picks the real one when `Push:PublicKey` / `Push:PrivateKey` are set.
+- [x] Backend: `SubscribeToPushCommand` / `UnsubscribeFromPushCommand` + `NotificationsController` (`GET /vapid-public-key`, `POST /subscribe`, `POST /unsubscribe`)
+- [x] Backend: `AcceptInvitationCommandHandler` fires a notification to the initiator after commit
+- [x] Backend: `SafetyCheckAlertHostedService` and `AnniversaryDetectionHostedService` now call `INotificationService` instead of logging
+- [x] Backend: `InvitationReminderHostedService` — 30-minute sweep for `Accepted` invitations with `MeetingAt` in `[23h, 25h]` and `[1.5h, 2.5h]`, idempotent via shadow columns `Reminder24hSentAt` / `Reminder2hSentAt`. Notifies both initiator and recipient when both are known.
+- [x] EF migration `PushAndReminders`
+- [x] Frontend: `public/sw.js` service worker handling `push` + `notificationclick` (focus existing tab, navigate to payload URL)
+- [x] Frontend: `notificationsApi` + `src/lib/notifications/push.ts` (PushManager subscribe flow, base64url key conversion)
+- [x] Frontend: `NotificationsSetup` component with explicit Enable button (no auto-prompt). Embedded on `/settings` and as a compact banner on `/dashboard`.
+- [ ] Wire `Counter` / `Decline` / view notifications — incremental follow-up, same pattern as Accept
 
 ## Phase 6 — History, cancelation, auto-purge
 
