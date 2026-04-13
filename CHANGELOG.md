@@ -2,6 +2,24 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-13 — Phase 7: safety check
+
+### Added
+- `SafetyCheck` aggregate under `Pickadate.Domain.Safety` — `FriendToken`, `ScheduledCheckInAt` (meeting + 2h), `ConfirmedAt`, `AlertedAt`. Confirm is idempotent; `NeedsAlerting` drives the hosted service.
+- `ISafetyCheckRepository` + `SafetyCheckRepository` — lookups by id, friend token, active-for-user, and due-for-alert.
+- `ISafetyTokenGenerator` / `SafetyTokenGenerator` — 24 random bytes → 32-char URL-safe base64url. Longer than the invitation slug because the friend link is a bearer capability.
+- `CreateSafetyCheckCommand` — auth required, rejects with 422 when the invitation isn't Accepted, and returns the existing active check instead of duplicating.
+- `ConfirmSafetyCheckCommand` — "all good" marks the active check confirmed (idempotent).
+- `GetFriendSafetyViewQuery` — anonymous bearer-token endpoint returning meeting details and current status (`Scheduled` / `Confirmed` / `Overdue`).
+- `SafetyChecksController` — `POST /api/safety-checks/invitations/{slug}`, `POST /{slug}/confirm`, `GET /api/safety-checks/{friendToken}`.
+- `SafetyCheckAlertHostedService` — 5-minute background sweep that marks due checks as alerted and logs a warning where the Phase 5 push would fire once notifications ship.
+- `ExceptionHandlingMiddleware` maps `InvalidSafetyCheckStateException` → 422.
+- EF migration `SafetyChecks` — adds the `safety_checks` table with a unique index on `FriendToken`, a composite index on `(InvitationId, UserId)`, and an index on `ScheduledCheckInAt` for the sweep.
+
+### Removed
+- Phase 11 (Admin) from TASKS.md — user confirmed it's not part of the product. Downstream phases keep their numbers.
+
+
 ## 2026-04-12 — Phase 4: weather forecast
 
 ### Added
