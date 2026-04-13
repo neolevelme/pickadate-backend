@@ -1,5 +1,5 @@
 using MediatR;
-using Pickadate.Application.Contracts;
+using Pickadate.Application.Invitations.Authorization;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Anniversaries;
 using Pickadate.Domain.Invitations;
@@ -14,44 +14,39 @@ public class MarkCompletedCommandHandler : IRequestHandler<MarkCompletedCommand>
     private readonly IInvitationRepository _invitations;
     private readonly IAnniversaryRepository _anniversaries;
     private readonly IUserRepository _users;
-    private readonly ICurrentUser _currentUser;
+    private readonly IInvitationOwnerAuthorizer _ownerAuthorizer;
     private readonly IUnitOfWork _uow;
 
     public MarkCompletedCommandHandler(
         IInvitationRepository invitations,
         IAnniversaryRepository anniversaries,
         IUserRepository users,
-        ICurrentUser currentUser,
+        IInvitationOwnerAuthorizer ownerAuthorizer,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _anniversaries = anniversaries;
         _users = users;
-        _currentUser = currentUser;
+        _ownerAuthorizer = ownerAuthorizer;
         _uow = uow;
     }
 
     public async Task Handle(MarkCompletedCommand request, CancellationToken ct)
     {
-        var userId = _currentUser.RequireUserId();
         var invitation = await _invitations.GetBySlugAsync(request.Slug, ct)
             ?? throw new InvitationNotFoundException(request.Slug);
 
-        // Spec §10: the initiator can mark completed from the dashboard. Once
-        // the recipient also gets a dashboard view they can do the same.
-        if (invitation.InitiatorId != userId)
-            throw new UnauthorizedAccessException("Only the initiator can mark this invitation completed.");
+        _ownerAuthorizer.AssertOwns(invitation);
 
         invitation.MarkCompleted();
 
         // Spec §8: a successful meeting seeds an Anniversary record for the
-        // couple if both sides have anniversary reminders enabled and no
-        // record exists yet for this pair. RecipientId is only populated when
-        // someone authenticated to accept, so anonymous-view invitations don't
-        // seed anniversaries.
-        if (invitation.RecipientId is Guid recipientId)
+        // couple, but only when both sides actually have accounts. Anonymous
+        // invitations never seed an anniversary because there's no second
+        // user to notify.
+        if (invitation.InitiatorId is Guid initiatorId && invitation.RecipientId is Guid recipientId)
         {
-            await TrySeedAnniversary(invitation.Id, invitation.InitiatorId, recipientId, invitation.MeetingAt, ct);
+            await TrySeedAnniversary(invitation.Id, initiatorId, recipientId, invitation.MeetingAt, ct);
         }
 
         await _uow.CommitAsync(ct);

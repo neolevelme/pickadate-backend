@@ -10,6 +10,9 @@ public interface IInvitationRepository
     /// <summary>Returns the invitations created by a user, newest first.</summary>
     Task<IReadOnlyList<Invitation>> ListForInitiatorAsync(Guid initiatorId, CancellationToken ct = default);
 
+    /// <summary>Returns invitations whose owner-token hash is in the supplied set (anonymous only).</summary>
+    Task<IReadOnlyList<Invitation>> FindByOwnerTokenHashesAsync(IReadOnlyCollection<string> hashes, CancellationToken ct = default);
+
     /// <summary>Removes invitations whose meeting is more than 30 days in the past.</summary>
     Task<int> PurgeOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }

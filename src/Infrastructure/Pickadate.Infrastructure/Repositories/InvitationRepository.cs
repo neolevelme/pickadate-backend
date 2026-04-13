@@ -29,6 +29,13 @@ public class InvitationRepository : IInvitationRepository
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Invitation>> FindByOwnerTokenHashesAsync(
+        IReadOnlyCollection<string> hashes,
+        CancellationToken ct = default) =>
+        await _db.Invitations
+            .Where(i => i.OwnerTokenHash != null && hashes.Contains(i.OwnerTokenHash))
+            .ToListAsync(ct);
+
     public Task<int> PurgeOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default) =>
         _db.Invitations
             .Where(i => i.MeetingAt < cutoffUtc)

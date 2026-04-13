@@ -74,7 +74,9 @@ public class GetMyInvitationsQueryHandler : IRequestHandler<GetMyInvitationsQuer
                 // "You" keeps the DTO shape consistent with the public view.
                 InitiatorName: "You",
                 LatestCounter: latest,
-                Weather: weatherDto));
+                Weather: weatherDto,
+                ViewerIsOwner: true,
+                HasAccount: true));
         }
 
         return results;

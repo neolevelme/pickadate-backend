@@ -52,6 +52,10 @@ public class ExceptionHandlingMiddleware
         {
             await WriteProblem(context, StatusCodes.Status422UnprocessableEntity, "Invalid state", ex.Message);
         }
+        catch (CannotAcceptOwnInvitationException ex)
+        {
+            await WriteProblem(context, StatusCodes.Status422UnprocessableEntity, "Invalid state", ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception");

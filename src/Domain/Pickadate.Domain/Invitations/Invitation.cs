@@ -11,7 +11,21 @@ public class Invitation : Entity
     public const int MaxCounterRounds = 3;
 
     public Guid Id { get; private set; }
-    public Guid InitiatorId { get; private set; }
+
+    /// <summary>
+    /// The authenticated creator, when the invitation was made from a logged-in
+    /// session. Null when the invitation was created anonymously — in that case
+    /// the caller holds an owner token (see <see cref="OwnerTokenHash"/>) and
+    /// can later claim the invitation onto a new account.
+    /// </summary>
+    public Guid? InitiatorId { get; private set; }
+
+    /// <summary>
+    /// SHA-256 hash of the raw owner token for anonymous invitations. Null
+    /// once the invitation has been claimed (InitiatorId is set) or when the
+    /// invitation was always authenticated.
+    /// </summary>
+    public string? OwnerTokenHash { get; private set; }
 
     /// <summary>Set the moment someone authenticates and accepts/counters; null while the invitation is still anonymous.</summary>
     public Guid? RecipientId { get; private set; }
@@ -38,8 +52,15 @@ public class Invitation : Entity
 
     private Invitation() { }
 
+    /// <summary>
+    /// Creates and publishes an invitation. Exactly one of <paramref name="initiatorId"/>
+    /// or <paramref name="ownerTokenHash"/> must be supplied — an authenticated
+    /// creator holds their invitations through the user account; an anonymous
+    /// creator holds a bearer capability (the raw owner token, hashed here).
+    /// </summary>
     public static Invitation CreateAndPublish(
-        Guid initiatorId,
+        Guid? initiatorId,
+        string? ownerTokenHash,
         string slug,
         InvitationVibe vibe,
         string? customVibe,
@@ -48,6 +69,11 @@ public class Invitation : Entity
         string? message,
         string? mediaUrl)
     {
+        if (initiatorId is null && string.IsNullOrEmpty(ownerTokenHash))
+            throw new ArgumentException("Anonymous invitations must carry an owner token hash.");
+        if (initiatorId is not null && !string.IsNullOrEmpty(ownerTokenHash))
+            throw new ArgumentException("Authenticated invitations must not also carry an owner token hash.");
+
         CheckRule(new MeetingMustBeInTheFuture(meetingAtUtc));
         CheckRule(new MessageLengthWithinLimit(message));
         CheckRule(new CustomVibeRequiredWhenVibeIsCustom(vibe, customVibe));
@@ -57,6 +83,7 @@ public class Invitation : Entity
         {
             Id = Guid.NewGuid(),
             InitiatorId = initiatorId,
+            OwnerTokenHash = ownerTokenHash,
             Slug = slug,
             Vibe = vibe,
             CustomVibe = vibe == InvitationVibe.Custom ? customVibe?.Trim() : null,
@@ -69,6 +96,18 @@ public class Invitation : Entity
             CreatedAt = now,
             ExpiresAt = now + UnopenedTtl
         };
+    }
+
+    /// <summary>
+    /// Attaches an anonymous invitation to a real user account. After this
+    /// the owner token no longer grants any access — the account does.
+    /// </summary>
+    public void ClaimByUser(Guid userId)
+    {
+        if (InitiatorId is not null)
+            throw new InvalidOperationException("Invitation is already attached to an account.");
+        InitiatorId = userId;
+        OwnerTokenHash = null;
     }
 
     public void RecordView(DateTime nowUtc)

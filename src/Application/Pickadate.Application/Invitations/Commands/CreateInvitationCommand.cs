@@ -60,25 +60,26 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 {
     private readonly IInvitationRepository _invitations;
     private readonly ISlugGenerator _slugs;
+    private readonly IOwnerTokenGenerator _ownerTokens;
     private readonly ICurrentUser _currentUser;
     private readonly IUnitOfWork _uow;
 
     public CreateInvitationCommandHandler(
         IInvitationRepository invitations,
         ISlugGenerator slugs,
+        IOwnerTokenGenerator ownerTokens,
         ICurrentUser currentUser,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _slugs = slugs;
+        _ownerTokens = ownerTokens;
         _currentUser = currentUser;
         _uow = uow;
     }
 
     public async Task<CreateInvitationResult> Handle(CreateInvitationCommand request, CancellationToken ct)
     {
-        var userId = _currentUser.RequireUserId();
-
         var slug = await GenerateUniqueSlugAsync(ct);
 
         var vibe = Enum.Parse<InvitationVibe>(request.Vibe, ignoreCase: true);
@@ -89,8 +90,15 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
             request.PlaceLat,
             request.PlaceLng);
 
+        // Two creation modes — authenticated user vs anonymous bearer token.
+        // Anonymous creation is the new default; authenticated creators just
+        // happen to also have a stable identity for cross-device access.
+        var userId = _currentUser.UserId;
+        OwnerToken? ownerToken = userId is null ? _ownerTokens.Generate() : null;
+
         var invitation = Invitation.CreateAndPublish(
             initiatorId: userId,
+            ownerTokenHash: ownerToken?.Hash,
             slug: slug,
             vibe: vibe,
             customVibe: request.CustomVibe,
@@ -102,12 +110,12 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         await _invitations.AddAsync(invitation, ct);
         await _uow.CommitAsync(ct);
 
-        return new CreateInvitationResult(slug);
+        // Raw token is returned exactly once. The browser stores it under
+        // `pickadate.owner.<slug>`; the user can also copy it as a recovery
+        // code so they can come back from another device.
+        return new CreateInvitationResult(slug, ownerToken?.Raw);
     }
 
-    // Retry a handful of times in the extraordinarily unlikely event of a slug collision.
-    // With 26^2 * 36^4 ≈ 1.1B possibilities, a real collision at scale is still rare;
-    // the loop just keeps correctness airtight instead of relying on probability.
     private async Task<string> GenerateUniqueSlugAsync(CancellationToken ct)
     {
         for (var i = 0; i < 5; i++)

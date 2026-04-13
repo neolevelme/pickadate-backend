@@ -2,6 +2,28 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-13 — Anonymous-first invitations
+
+### Added
+- `Invitation.InitiatorId` is now nullable. New `OwnerTokenHash` column holds a SHA-256 hash of the raw owner token for anonymous invitations.
+- `Invitation.CreateAndPublish` now takes either `initiatorId` *or* `ownerTokenHash` (exactly one). New `Invitation.ClaimByUser(userId)` attaches an anonymous invitation to a real account.
+- `IOwnerTokenGenerator` / `OwnerTokenGenerator` — Crockford base32, 10 random bytes → `XXXX-XXXX-XXXX-XXXX` formatted with dashes (80 bits of entropy). Hashing normalises whitespace, dashes, case, and the usual Crockford typos (O→0, I/L→1).
+- `IOwnerTokenContext` / `OwnerTokenContext` — reads bearer owner token from the `X-Invitation-Owner-Token` request header.
+- `IInvitationOwnerAuthorizer` / `InvitationOwnerAuthorizer` in Application — single source of truth for "is this caller allowed to mutate this invitation?". Either path is enough: the authenticated user matches `InitiatorId`, or a hashed bearer token matches `OwnerTokenHash`.
+- `CreateInvitationCommand` is no longer auth-required. When the caller is signed in the invitation gets an `InitiatorId`; otherwise the handler generates a fresh owner token, persists the hash, and returns the raw token in the response (exactly once).
+- `CreateInvitationResult` now carries `OwnerToken` (nullable, only populated for anonymous creators).
+- `InvitationDetailDto` exposes `ViewerIsOwner` (computed via `IInvitationOwnerAuthorizer`) and `HasAccount` so the frontend can pick the right UI for the viewer.
+- `GetInvitationBySlugQueryHandler` skips the Pending → Viewed transition when the *creator themselves* is opening the link (e.g. checking it from another browser), so opens by the owner don't fire the "your invitation was opened" notification.
+- `ClaimInvitationsCommand` + `POST /api/invitations/claim` — authenticated user submits a list of raw owner tokens; the handler hashes each, finds the matching anonymous invitations, and attaches them to the caller. Returns the slugs that were claimed so the client can drop them from local storage.
+- `IInvitationRepository.FindByOwnerTokenHashesAsync` for the bulk claim lookup.
+- `Cancel`, `MarkCompleted`, `AcceptCounterProposal` handlers all use `IInvitationOwnerAuthorizer.AssertOwns` instead of an `InitiatorId == userId` check, which means anonymous creators can mutate via the bearer token from any browser holding the recovery code. Their controller endpoints flipped from `[Authorize]` to `[AllowAnonymous]`.
+- `AcceptInvitationCommandHandler` blocks the caller from accepting their own invitation (`CannotAcceptOwnInvitationException` → 422). The frontend hides the button when `ViewerIsOwner` is true; the backend enforces it for forged requests.
+- EF migration `AnonymousInvitationOwnership` — makes `InitiatorId` nullable and adds `OwnerTokenHash` column + index on `invitations`.
+
+### Changed
+- All notification dispatches that targeted the initiator (Accept / Decline / Counter / Reminder / View) now no-op when `InitiatorId` is null instead of crashing — anonymous creators see state changes when they next open their invitation or dashboard.
+
+
 ## 2026-04-13 — Phase 12: delete-my-account + notification follow-up
 
 ### Added

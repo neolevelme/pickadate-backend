@@ -63,15 +63,18 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
 
         // Spec §4 Option 3 — deliberately calm tone, no comment echoed
         // in the push itself (the initiator sees the note when they open
-        // the invitation).
-        await _notifications.NotifyUserAsync(
-            invitation.InitiatorId,
-            new NotificationPayload(
-                Title: "Your invitation wasn't accepted",
-                Body: "No worries — tap for details.",
-                Url: "/dashboard",
-                Tag: $"invitation-declined-{invitation.Slug}"),
-            ct);
+        // the invitation). Anonymous initiators don't receive a push.
+        if (invitation.InitiatorId is Guid initiatorId)
+        {
+            await _notifications.NotifyUserAsync(
+                initiatorId,
+                new NotificationPayload(
+                    Title: "Your invitation wasn't accepted",
+                    Body: "No worries — tap for details.",
+                    Url: "/dashboard",
+                    Tag: $"invitation-declined-{invitation.Slug}"),
+                ct);
+        }
     }
 }
 

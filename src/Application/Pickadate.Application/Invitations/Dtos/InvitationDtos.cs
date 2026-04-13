@@ -36,6 +36,13 @@ public record InvitationDetailDto(
     DateTime ExpiresAt,
     string InitiatorName,
     CounterProposalDto? LatestCounter,
-    WeatherDto? Weather);
+    WeatherDto? Weather,
+    bool ViewerIsOwner,
+    bool HasAccount);
 
-public record CreateInvitationResult(string Slug);
+/// <summary>
+/// Returned exactly once when an invitation is created. <see cref="OwnerToken"/>
+/// is non-null only when the creator was anonymous — that's the recovery
+/// code the browser stores under `pickadate.owner.&lt;slug&gt;`.
+/// </summary>
+public record CreateInvitationResult(string Slug, string? OwnerToken);

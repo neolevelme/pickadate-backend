@@ -1,5 +1,5 @@
 using MediatR;
-using Pickadate.Application.Contracts;
+using Pickadate.Application.Invitations.Authorization;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Invitations;
 
@@ -11,29 +11,27 @@ public class AcceptCounterProposalCommandHandler : IRequestHandler<AcceptCounter
 {
     private readonly IInvitationRepository _invitations;
     private readonly ICounterProposalRepository _counterProposals;
-    private readonly ICurrentUser _currentUser;
+    private readonly IInvitationOwnerAuthorizer _ownerAuthorizer;
     private readonly IUnitOfWork _uow;
 
     public AcceptCounterProposalCommandHandler(
         IInvitationRepository invitations,
         ICounterProposalRepository counterProposals,
-        ICurrentUser currentUser,
+        IInvitationOwnerAuthorizer ownerAuthorizer,
         IUnitOfWork uow)
     {
         _invitations = invitations;
         _counterProposals = counterProposals;
-        _currentUser = currentUser;
+        _ownerAuthorizer = ownerAuthorizer;
         _uow = uow;
     }
 
     public async Task Handle(AcceptCounterProposalCommand request, CancellationToken ct)
     {
-        var userId = _currentUser.RequireUserId();
         var invitation = await _invitations.GetBySlugAsync(request.Slug, ct)
             ?? throw new InvitationNotFoundException(request.Slug);
 
-        if (invitation.InitiatorId != userId)
-            throw new UnauthorizedAccessException("Only the initiator can accept a counter-proposal here.");
+        _ownerAuthorizer.AssertOwns(invitation);
 
         var latest = await _counterProposals.GetLatestForInvitationAsync(invitation.Id, ct)
             ?? throw new InvitationNotFoundException($"no counter-proposal for '{request.Slug}'");

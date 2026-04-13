@@ -1,5 +1,6 @@
 using MediatR;
 using Pickadate.Application.Contracts;
+using Pickadate.Application.Invitations.Authorization;
 using Pickadate.Application.Invitations.Dtos;
 using Pickadate.BuildingBlocks.Application;
 using Pickadate.Domain.Invitations;
@@ -16,6 +17,7 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
     private readonly IUserRepository _users;
     private readonly IWeatherService _weather;
     private readonly INotificationService _notifications;
+    private readonly IInvitationOwnerAuthorizer _ownerAuthorizer;
     private readonly IUnitOfWork _uow;
 
     public GetInvitationBySlugQueryHandler(
@@ -24,6 +26,7 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
         IUserRepository users,
         IWeatherService weather,
         INotificationService notifications,
+        IInvitationOwnerAuthorizer ownerAuthorizer,
         IUnitOfWork uow)
     {
         _invitations = invitations;
@@ -31,6 +34,7 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
         _users = users;
         _weather = weather;
         _notifications = notifications;
+        _ownerAuthorizer = ownerAuthorizer;
         _uow = uow;
     }
 
@@ -39,26 +43,40 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
         var invitation = await _invitations.GetBySlugAsync(request.Slug, ct);
         if (invitation is null) return null;
 
-        var wasPending = invitation.Status == InvitationStatus.Pending;
-        invitation.RecordView(DateTime.UtcNow);
+        var viewerIsOwner = _ownerAuthorizer.IsOwner(invitation);
+
+        // Don't bump Pending → Viewed when the *creator themselves* is opening
+        // the link (e.g. checking it from a second browser). We only want to
+        // count the recipient's first open.
+        var wasPending = invitation.Status == InvitationStatus.Pending && !viewerIsOwner;
+        if (!viewerIsOwner)
+        {
+            invitation.RecordView(DateTime.UtcNow);
+        }
         if (wasPending)
         {
             await _uow.CommitAsync(ct);
 
-            // Spec §9: the initiator wants to know the moment their link is
-            // first opened. Fires only on the Pending → Viewed transition so
-            // refreshes don't spam.
-            await _notifications.NotifyUserAsync(
-                invitation.InitiatorId,
-                new NotificationPayload(
-                    Title: "Your invitation was opened",
-                    Body: "They've seen it — fingers crossed.",
-                    Url: "/dashboard",
-                    Tag: $"invitation-viewed-{invitation.Slug}"),
-                ct);
+            // Spec §9: notify the initiator the moment their link is first
+            // opened — but only when they actually have an account to receive
+            // the push. Anonymous initiators get the same signal next time
+            // they open the dashboard.
+            if (invitation.InitiatorId is Guid initiatorId)
+            {
+                await _notifications.NotifyUserAsync(
+                    initiatorId,
+                    new NotificationPayload(
+                        Title: "Your invitation was opened",
+                        Body: "They've seen it — fingers crossed.",
+                        Url: "/dashboard",
+                        Tag: $"invitation-viewed-{invitation.Slug}"),
+                    ct);
+            }
         }
 
-        var initiator = await _users.GetByIdAsync(invitation.InitiatorId, ct);
+        var initiator = invitation.InitiatorId is Guid id
+            ? await _users.GetByIdAsync(id, ct)
+            : null;
 
         CounterProposalDto? latestCounterDto = null;
         if (invitation.CounterRound > 0)
@@ -107,6 +125,8 @@ public class GetInvitationBySlugQueryHandler : IRequestHandler<GetInvitationBySl
             ExpiresAt: invitation.ExpiresAt,
             InitiatorName: initiator?.Name ?? "Someone",
             LatestCounter: latestCounterDto,
-            Weather: weatherDto);
+            Weather: weatherDto,
+            ViewerIsOwner: viewerIsOwner,
+            HasAccount: invitation.InitiatorId is not null);
     }
 }

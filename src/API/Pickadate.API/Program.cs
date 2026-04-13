@@ -66,9 +66,12 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IClientContext, ClientContext>();
+builder.Services.AddScoped<IOwnerTokenContext, OwnerTokenContext>();
+builder.Services.AddScoped<Pickadate.Application.Invitations.Authorization.IInvitationOwnerAuthorizer, Pickadate.Application.Invitations.Authorization.InvitationOwnerAuthorizer>();
 builder.Services.AddScoped<Pickadate.Application.Users.Commands.IDeleteMyAccountService, DeleteMyAccountService>();
 builder.Services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddSingleton<ISlugGenerator, SlugGenerator>();
+builder.Services.AddSingleton<IOwnerTokenGenerator, OwnerTokenGenerator>();
 builder.Services.AddSingleton<ISafetyTokenGenerator, SafetyTokenGenerator>();
 
 // Weather forecast (Open-Meteo) — typed HttpClient with a 6h in-memory cache

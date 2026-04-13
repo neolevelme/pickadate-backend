@@ -49,8 +49,10 @@ public class PickadateDbContext : DbContext
             b.Property(i => i.Message).HasMaxLength(140);
             b.Property(i => i.MediaUrl).HasMaxLength(512);
             b.Property(i => i.DeclineReason).HasMaxLength(80);
+            b.Property(i => i.OwnerTokenHash).HasMaxLength(128);
             b.HasIndex(i => i.InitiatorId);
             b.HasIndex(i => i.RecipientId);
+            b.HasIndex(i => i.OwnerTokenHash);
 
             b.OwnsOne(i => i.Place, p =>
             {

@@ -16,7 +16,13 @@ public class InvitationsController : ControllerBase
 
     // ---------- create / read ----------
 
-    [Authorize]
+    /// <summary>
+    /// Anonymous-first invitation creation. When the caller is logged in the
+    /// invitation is attached to their account; otherwise the response carries
+    /// a one-time owner token (recovery code) the browser stores under
+    /// `pickadate.owner.&lt;slug&gt;`.
+    /// </summary>
+    [AllowAnonymous]
     [HttpPost]
     public async Task<ActionResult<CreateInvitationResult>> Create(
         [FromBody] CreateInvitationCommand command,
@@ -42,6 +48,24 @@ public class InvitationsController : ControllerBase
     {
         var list = await _mediator.Send(new GetMyInvitationsQuery(), ct);
         return Ok(list);
+    }
+
+    public record ClaimBody(IReadOnlyList<string> OwnerTokens);
+
+    /// <summary>
+    /// Attach a list of anonymous invitations to the authenticated caller.
+    /// The browser submits every owner token it has stashed in localStorage;
+    /// the backend hashes each and claims any that still have a matching
+    /// nullable initiator.
+    /// </summary>
+    [Authorize]
+    [HttpPost("claim")]
+    public async Task<ActionResult<ClaimInvitationsResult>> Claim(
+        [FromBody] ClaimBody body,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ClaimInvitationsCommand(body.OwnerTokens ?? Array.Empty<string>()), ct);
+        return Ok(result);
     }
 
     // ---------- recipient actions (Phase 3) ----------
@@ -90,10 +114,14 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    // ---------- initiator actions (Phase 6) ----------
+    // ---------- initiator actions ----------
+    //
+    // These three accept either a JWT (the user owns the invitation) or an
+    // X-Invitation-Owner-Token header (anonymous bearer capability), so
+    // anonymous creators can act on their own invitations from any browser
+    // that holds the recovery code.
 
-    /// <summary>Initiator cancels an invitation before it's accepted or completed.</summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("{slug}/cancel")]
     public async Task<IActionResult> Cancel(string slug, CancellationToken ct)
     {
@@ -101,8 +129,7 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Initiator marks a completed meeting (spec §10).</summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("{slug}/complete")]
     public async Task<IActionResult> Complete(string slug, CancellationToken ct)
     {
@@ -110,8 +137,7 @@ public class InvitationsController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Initiator accepts the recipient's latest counter-proposal.</summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("{slug}/accept-counter")]
     public async Task<IActionResult> AcceptCounter(string slug, CancellationToken ct)
     {

@@ -100,10 +100,14 @@ public class InvitationReminderHostedService : BackgroundService
 
     private static Task SendReminderAsync(INotificationService notifications, Invitation invitation, int hoursAway, CancellationToken ct)
     {
-        // Notify both sides when we have both — otherwise just the initiator.
-        var recipients = invitation.RecipientId is Guid r
-            ? new[] { invitation.InitiatorId, r }
-            : new[] { invitation.InitiatorId };
+        // Notify whichever sides actually have accounts — anonymous initiators
+        // and pre-acceptance recipients have no push subscriptions, so target
+        // only the known user ids.
+        var recipients = new List<Guid>(2);
+        if (invitation.InitiatorId is Guid initiator) recipients.Add(initiator);
+        if (invitation.RecipientId is Guid recipient) recipients.Add(recipient);
+
+        if (recipients.Count == 0) return Task.CompletedTask;
 
         var title = hoursAway == 24 ? "Your meeting is tomorrow" : "Meeting in 2 hours";
         var body = $"{invitation.Place.Name} — {invitation.MeetingAt:HH:mm} UTC";
