@@ -9,6 +9,7 @@ using Pickadate.API.Middleware;
 using Pickadate.Application.Behaviors;
 using Pickadate.Application.Contracts;
 using Pickadate.BuildingBlocks.Application;
+using Pickadate.Domain.Anniversaries;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
@@ -54,6 +55,7 @@ builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<ICounterProposalRepository, CounterProposalRepository>();
 builder.Services.AddScoped<IDeclineRecordRepository, DeclineRecordRepository>();
 builder.Services.AddScoped<ISafetyCheckRepository, SafetyCheckRepository>();
+builder.Services.AddScoped<IAnniversaryRepository, AnniversaryRepository>();
 
 // Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -75,6 +77,7 @@ builder.Services.AddHttpClient<IWeatherService, OpenMeteoWeatherService>(c =>
 // Background jobs
 builder.Services.AddHostedService<InvitationPurgeHostedService>();
 builder.Services.AddHostedService<SafetyCheckAlertHostedService>();
+builder.Services.AddHostedService<AnniversaryDetectionHostedService>();
 
 builder.Services.AddHttpContextAccessor();
 

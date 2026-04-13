@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pickadate.Domain.Anniversaries;
 using Pickadate.Domain.AntiAbuse;
 using Pickadate.Domain.Auth;
 using Pickadate.Domain.Invitations;
@@ -15,6 +16,7 @@ public class PickadateDbContext : DbContext
     public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
     public DbSet<DeclineRecord> DeclineRecords => Set<DeclineRecord>();
     public DbSet<SafetyCheck> SafetyChecks => Set<SafetyCheck>();
+    public DbSet<Anniversary> Anniversaries => Set<Anniversary>();
 
     public PickadateDbContext(DbContextOptions<PickadateDbContext> options) : base(options) { }
 
@@ -46,6 +48,7 @@ public class PickadateDbContext : DbContext
             b.Property(i => i.MediaUrl).HasMaxLength(512);
             b.Property(i => i.DeclineReason).HasMaxLength(80);
             b.HasIndex(i => i.InitiatorId);
+            b.HasIndex(i => i.RecipientId);
 
             b.OwnsOne(i => i.Place, p =>
             {
@@ -105,6 +108,14 @@ public class PickadateDbContext : DbContext
             b.HasIndex(s => new { s.InvitationId, s.UserId });
             b.HasIndex(s => s.ScheduledCheckInAt);
             b.Ignore(s => s.DomainEvents);
+        });
+
+        modelBuilder.Entity<Anniversary>(b =>
+        {
+            b.ToTable("anniversaries");
+            b.HasKey(a => a.Id);
+            b.HasIndex(a => new { a.UserAId, a.UserBId }).IsUnique();
+            b.Ignore(a => a.DomainEvents);
         });
     }
 }

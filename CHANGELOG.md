@@ -2,6 +2,22 @@
 
 All notable changes to the pickadate.me backend are documented here.
 
+## 2026-04-13 — Phase 9: anniversary mode
+
+### Added
+- `Invitation.RecipientId` (nullable) — set the moment someone authenticates and accepts. `Accept()` now takes `recipientId`; `AcceptCounterProposal` backfills from the counter's proposer if the invitation was accepted straight from a counter. This closes a long-standing gap from Phase 3 where we only tracked the initiator side.
+- `Anniversary` aggregate under `Pickadate.Domain.Anniversaries`. Canonical pair ordering (`UserAId < UserBId`) so every pair has at most one row. `IsDueOn` and `YearsSince` power the detection service. Unique index on `(UserAId, UserBId)`.
+- `IAnniversaryRepository` + `AnniversaryRepository` — `ExistsForPair` (order-insensitive), `GetDueOn`, `Add`.
+- `User.AnniversaryEnabled` (default `true`) + `SetAnniversaryEnabled`. Spec §8 opt-out.
+- `GetMeQuery` / `MeDto` + `UpdateAnniversaryPreferenceCommand` + `UsersController` — `GET /api/users/me`, `PUT /api/users/me/anniversary`.
+- `MarkCompletedCommandHandler` now seeds an `Anniversary` record when the invitation has both `InitiatorId` and `RecipientId`, both users have `AnniversaryEnabled`, and no record already exists for the canonical pair.
+- `AnniversaryDetectionHostedService` — 24h background sweep that finds every anniversary whose `FirstDateAt` month+day matches today's UTC date and logs a warning where the Phase 5 push would fire (skips year-0 same-day-as-creation).
+- EF migration `AnniversaryAndRecipient` — adds `RecipientId` column + index on `invitations`, `AnniversaryEnabled` column on `users`, and the `anniversaries` table with its unique pair index.
+
+### Removed
+- `catch (UnauthorizedAccessException)` was already in the exception middleware from Phase 6, so `UnauthorizedAccessException` thrown by the new user commands flows through the existing 401 handler.
+
+
 ## 2026-04-13 — Phase 7: safety check
 
 ### Added

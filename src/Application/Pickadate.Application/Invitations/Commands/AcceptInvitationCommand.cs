@@ -28,12 +28,12 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         // Auth is enforced at the controller layer (Authorize attribute), but
         // we still require the claim here so the command is safe to dispatch
         // from anywhere.
-        _currentUser.RequireUserId();
+        var userId = _currentUser.RequireUserId();
 
         var invitation = await _invitations.GetBySlugAsync(request.Slug, ct)
             ?? throw new InvitationNotFoundException(request.Slug);
 
-        invitation.Accept();
+        invitation.Accept(userId);
         await _uow.CommitAsync(ct);
     }
 }

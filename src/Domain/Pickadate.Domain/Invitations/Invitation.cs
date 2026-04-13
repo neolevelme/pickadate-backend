@@ -12,6 +12,10 @@ public class Invitation : Entity
 
     public Guid Id { get; private set; }
     public Guid InitiatorId { get; private set; }
+
+    /// <summary>Set the moment someone authenticates and accepts/counters; null while the invitation is still anonymous.</summary>
+    public Guid? RecipientId { get; private set; }
+
     public string Slug { get; private set; } = null!;
 
     public InvitationVibe Vibe { get; private set; }
@@ -77,10 +81,11 @@ public class Invitation : Entity
     }
 
     /// <summary>Spec §4 Option 1: recipient accepts the invitation (auth required upstream).</summary>
-    public void Accept()
+    public void Accept(Guid recipientId)
     {
         CheckRule(new CanBeRespondedTo(Status));
         Status = InvitationStatus.Accepted;
+        RecipientId = recipientId;
         RespondedAt = DateTime.UtcNow;
     }
 
@@ -109,6 +114,11 @@ public class Invitation : Entity
             MeetingAt = counter.NewMeetingAt.Value;
         if (counter.NewPlace is not null)
             Place = counter.NewPlace;
+
+        // The counter-proposal's proposer is the recipient side — the person
+        // who authenticated to send the counter. Fill in RecipientId from that
+        // if we still don't have one (unlikely, but keeps the field consistent).
+        RecipientId ??= counter.ProposerId;
 
         Status = InvitationStatus.Accepted;
         RespondedAt = DateTime.UtcNow;

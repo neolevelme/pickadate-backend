@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pickadate.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Pickadate.Infrastructure.Persistence;
 namespace Pickadate.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PickadateDbContext))]
-    partial class PickadateDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413122959_AnniversaryAndRecipient")]
+    partial class AnniversaryAndRecipient
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

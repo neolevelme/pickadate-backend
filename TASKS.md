@@ -126,9 +126,14 @@
 
 ## Phase 9 — Anniversary mode
 
-- [ ] Backend: `Anniversary` entity (user pair, firstDateAt)
-- [ ] Backend: yearly cron → push + email
-- [ ] Frontend: toggle in settings
+- [x] Backend: `Invitation.RecipientId` + `Accept(recipientId)` — closes a gap left open since Phase 3
+- [x] Backend: `Anniversary` aggregate with canonical pair ordering (`UserAId < UserBId`), `FirstDateAt`, `InvitationId`
+- [x] Backend: `User.AnniversaryEnabled` (default true) + `UpdateAnniversaryPreferenceCommand` + `GetMeQuery` + `UsersController` (`GET /api/users/me`, `PUT /api/users/me/anniversary`)
+- [x] Backend: `MarkCompletedCommand` seeds an Anniversary when both users have it enabled and no record exists for the pair
+- [x] Backend: `AnniversaryDetectionHostedService` (daily sweep) logs every due anniversary where the Phase 5 push would fire
+- [x] Backend: EF migration `AnniversaryAndRecipient`
+- [x] Frontend: `/settings` page with auth redirect + anniversary toggle (optimistic update, revert on failure)
+- [x] Frontend: `/settings` added to `robots.txt` Disallow list
 
 ## Phase 10 — SEO & performance
 

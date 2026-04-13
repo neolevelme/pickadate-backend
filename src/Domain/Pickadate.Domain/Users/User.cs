@@ -14,6 +14,9 @@ public class User : Entity
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
 
+    /// <summary>Spec §8: the user can opt out of anniversary reminders.</summary>
+    public bool AnniversaryEnabled { get; private set; } = true;
+
     private User() { }
 
     public static User Create(string email)
@@ -23,7 +26,8 @@ public class User : Entity
             Id = Guid.NewGuid(),
             Email = email.Trim().ToLowerInvariant(),
             Role = UserRole.User,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            AnniversaryEnabled = true
         };
     }
 
@@ -36,4 +40,6 @@ public class User : Entity
         VibePreference = vibePreference;
         ProfileImageUrl = profileImageUrl;
     }
+
+    public void SetAnniversaryEnabled(bool enabled) => AnniversaryEnabled = enabled;
 }
